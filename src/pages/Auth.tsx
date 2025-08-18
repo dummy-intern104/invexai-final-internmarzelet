@@ -89,12 +89,12 @@ const Auth = () => {
   }
 
   return <BackgroundBeamsWithCollision>
-      {/* Back to home button with animated hover effect */}
+      {/* Back to home button with current domain */}
       <div className="absolute top-6 left-6 z-20">
         <HoverCard openDelay={0} closeDelay={100}>
           <HoverCardTrigger asChild>
             <a 
-              href="https://invexai.netlify.app" 
+              href={`${window.location.origin}/`}
               className="flex items-center px-4 py-2 rounded-lg bg-white/20 dark:bg-black/30 backdrop-blur-sm transition-all border border-transparent hover:border-purple-400"
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
