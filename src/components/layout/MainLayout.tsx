@@ -35,7 +35,8 @@ import {
   DollarSign,
   Building,
   MessageSquare,
-  Keyboard
+  Keyboard,
+  MoveHorizontal
 } from "lucide-react";
 import useAppStore from "@/store/appStore";
 
@@ -184,6 +185,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         { icon: <CheckCircle className="w-4 h-4" />, label: "In Stock", href: "/stock/in-stock" },
         { icon: <AlertTriangle className="w-4 h-4" />, label: "Low Stock", href: "/stock/low-stock" },
         { icon: <AlertCircle className="w-4 h-4" />, label: "Stock Out", href: "/stock/stock-out" },
+        { icon: <MoveHorizontal className="w-4 h-4" />, label: "Stock Transfer", href: "/stock/transfer" },
         { icon: <Clock className="w-4 h-4" />, label: "Short Expiry", href: "/stock/short-expiry" },
         { icon: <AlertTriangle className="w-4 h-4" />, label: "Expiry", href: "/stock/expiry" },
       ]

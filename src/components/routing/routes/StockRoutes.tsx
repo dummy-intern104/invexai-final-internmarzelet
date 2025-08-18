@@ -4,6 +4,7 @@ import MainLayout from "../../layout/MainLayout";
 import InStock from "@/pages/stock/InStock";
 import LowStock from "@/pages/stock/LowStock";
 import StockOut from "@/pages/stock/StockOut";
+import StockTransfer from "@/pages/stock/StockTransfer";
 import ShortExpiry from "@/pages/stock/ShortExpiry";
 import ExpiryStock from "@/pages/stock/Expiry";
 import { ProtectedRoute } from "../ProtectedRoute";
@@ -32,6 +33,14 @@ export const StockRoutes = () => (
       <ProtectedRoute>
         <MainLayout>
           <StockOut />
+        </MainLayout>
+      </ProtectedRoute>
+    } />
+
+    <Route path="/stock/transfer" element={
+      <ProtectedRoute>
+        <MainLayout>
+          <StockTransfer />
         </MainLayout>
       </ProtectedRoute>
     } />
