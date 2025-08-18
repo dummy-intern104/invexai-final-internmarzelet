@@ -1,0 +1,272 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+    
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    --info: 221 83% 53%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222.2 47.4% 11.2%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 47.4% 11.2%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 47.4% 11.2%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    
+    --info: 221 83% 53%;
+    --info-foreground: 210 40% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 1rem;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+}
+
+.chart-container {
+  width: 100%;
+  height: 250px;
+}
+
+.card-hover {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dark .glassmorphism {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 20px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+}
+
+/* Custom styles for empty state */
+.empty-state-icon {
+  @apply w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4;
+}
+
+.empty-state-text {
+  @apply text-lg font-semibold;
+}
+
+.empty-state-subtext {
+  @apply text-muted-foreground mt-1 mb-6;
+}
+
+/* Add specific dark mode styles for status badges and cards */
+.dark .bg-green-100 {
+  @apply bg-green-900 bg-opacity-30 text-green-300;
+}
+
+.dark .bg-yellow-100 {
+  @apply bg-yellow-900 bg-opacity-30 text-yellow-300;
+}
+
+.dark .bg-red-100 {
+  @apply bg-red-900 bg-opacity-30 text-red-300;
+}
+
+.dark .bg-blue-100 {
+  @apply bg-blue-900 bg-opacity-30 text-blue-300;
+}
+
+.dark .bg-blue-50,
+.dark .bg-green-50,
+.dark .bg-purple-50,
+.dark .bg-red-50 {
+  @apply bg-gray-800;
+}
+
+/* Make sure table text is visible in dark mode */
+.dark tbody td,
+.dark tbody th {
+  @apply text-gray-200;
+}
+
+/* Fix visibility of status badges in dark mode */
+.dark [class*="bg-"][class*="text-"] {
+  @apply text-opacity-90;
+}
+
+/* Fix input text colors in dark mode */
+.dark input,
+.dark select,
+.dark textarea {
+  @apply text-gray-200;
+}
+
+/* Fix stat card numbers in dark mode */
+.dark .font-bold, 
+.dark h3.text-2xl,
+.dark h3.text-3xl {
+  @apply text-white;
+}
+
+/* Smooth page transitions */
+.page-transition {
+  transition: opacity 0.7s ease-in-out, transform 0.7s ease-in-out;
+}
+
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+/* Enhanced smooth scrolling for mobile */
+@media (max-width: 768px) {
+  html, body {
+    scroll-behavior: smooth;
+  }
+  
+  .transition-all {
+    transition-duration: 700ms;
+  }
+  
+  .fade-in {
+    animation-duration: 1s;
+  }
+  
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    transition: all 0.8s ease-in-out;
+  }
+}
