@@ -7,6 +7,8 @@ export interface Product {
   units: string;
   reorder_level: number;
   expiry_date?: string;
+  created_at?: string;
+  user_id?: string;
   supplier?: {
     company_name: string;
     gst_number: string;
@@ -25,11 +27,14 @@ export interface ProductState {
   setProducts: (products: Product[]) => void;
   setCategories: (categories: string[]) => void;
   addProduct: (productData: any) => void;
-  updateProduct: (productId: number, updatedData: any) => void;
-  deleteProduct: (productId: number) => void;
+  updateProduct: (productId: string, updatedData: any) => void;
+  deleteProduct: (productId: string) => void;
   importProductsFromCSV: (file: File) => Promise<void>;
   transferProduct: (productId: number, quantity: number, destinationType: string) => void;
   restockProduct: (productId: number, quantity: number) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  loadProductsFromSupabase: () => Promise<void>;
 }
 
 export interface ProductSlice {

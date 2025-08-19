@@ -13,6 +13,7 @@ import { useSupabaseInventory } from "@/hooks/useSupabaseInventory";
 import { useSupabaseProducts } from "@/hooks/useSupabaseProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Product } from "@/types";
 
 const Stock = () => {
   const navigate = useNavigate();
@@ -46,6 +47,18 @@ const Stock = () => {
     }
   };
 
+  // Transform products to match Product interface
+  const transformedProducts: Product[] = products.map(p => ({
+    id: p.id,
+    name: p.product_name,
+    category: p.category,
+    price: p.price,
+    units: p.units,
+    reorder_level: 0, // Default reorder level
+    created_at: p.created_at,
+    user_id: p.user_id
+  }));
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -56,9 +69,9 @@ const Stock = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <StockHeader onOpenReportDialog={() => setShowReportDialog(true)} />
+      <StockHeader />
       
-      <StockStats products={products} />
+      <StockStats products={transformedProducts} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
@@ -76,13 +89,7 @@ const Stock = () => {
           <ProductInventory 
             title="Product Inventory"
             description="Manage your product inventory levels"
-            products={products.map(p => ({
-              product_id: parseInt(p.id),
-              product_name: p.product_name,
-              category: p.category,
-              units: p.units,
-              price: p.price
-            }))}
+            products={transformedProducts}
             onRestock={() => {}}
             onDelete={() => {}}
           />

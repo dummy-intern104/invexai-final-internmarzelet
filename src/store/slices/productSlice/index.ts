@@ -4,6 +4,7 @@ import { ProductState } from './types';
 import { createBasicOperations } from './basicOperations';
 import { createInventoryOperations } from './inventoryOperations';
 import { createCSVImportOperations } from './csvImport';
+import { createSupabaseProductOperations } from './supabaseOperations';
 
 export const createProductSlice = (set: any, get: any) => {
   // Combine all operations
@@ -11,6 +12,7 @@ export const createProductSlice = (set: any, get: any) => {
     ...createBasicOperations(set, get),
     ...createInventoryOperations(set, get),
     ...createCSVImportOperations(set, get),
+    ...createSupabaseProductOperations(set, get),
   };
 };
 

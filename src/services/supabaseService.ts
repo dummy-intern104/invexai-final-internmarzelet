@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { GSTDetails } from '@/types';
 
 // Products Service
-const productsService = {
+export const productsService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('products')
@@ -51,7 +51,7 @@ const productsService = {
 };
 
 // Sales Service
-const salesService = {
+export const salesService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('sales')
@@ -103,7 +103,7 @@ const salesService = {
 };
 
 // Clients Service
-const clientsService = {
+export const clientsService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('clients')
@@ -151,7 +151,7 @@ const clientsService = {
 };
 
 // Payments Service
-const paymentsService = {
+export const paymentsService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('payments')
@@ -192,7 +192,7 @@ const paymentsService = {
 };
 
 // Meetings Service
-const meetingsService = {
+export const meetingsService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('meetings')
@@ -240,12 +240,12 @@ const meetingsService = {
 };
 
 // Suppliers Service
-const suppliersService = {
+export const suppliersService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('suppliers')
       .select('*')
-      .order('company_name', { ascending: true });
+      .order('supplier_name', { ascending: true });
 
     if (error) throw error;
     return data || [];
@@ -288,7 +288,7 @@ const suppliersService = {
 };
 
 // Expense Service
-const expenseService = {
+export const expenseService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('expenses')
@@ -336,7 +336,7 @@ const expenseService = {
 };
 
 // Sales Returns Service
-const salesReturnsService = {
+export const salesReturnService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('sales_returns')
@@ -392,7 +392,7 @@ const salesReturnsService = {
 };
 
 // Purchase Returns Service
-const purchaseReturnsService = {
+export const purchaseReturnService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('purchase_returns')
@@ -445,7 +445,7 @@ const purchaseReturnsService = {
 };
 
 // Enhanced inventory service with getByProduct method
-const inventoryService = {
+export const inventoryService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('inventory')
@@ -592,7 +592,6 @@ const analyticsService = {
     const totalProducts = (productsData || []).length;
     const lowStockCount = (inventoryData || []).filter(item => item.current_stock <= item.reorder_level).length;
     const outOfStockCount = (inventoryData || []).filter(item => item.current_stock === 0).length;
-    // Remove cost_price reference - just use current_stock for total value calculation
     const totalInventoryValue = (inventoryData || []).reduce((sum, item) => sum + item.current_stock, 0);
 
     return {
@@ -657,8 +656,8 @@ export const supabaseService = {
   analytics: analyticsService,
   suppliers: suppliersService,
   expenses: expenseService,
-  purchaseReturns: purchaseReturnsService,
-  salesReturns: salesReturnsService
+  purchaseReturns: purchaseReturnService,
+  salesReturns: salesReturnService
 };
 
 export default supabaseService;
