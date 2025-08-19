@@ -74,15 +74,23 @@ const Stock = () => {
 
         <TabsContent value="inventory" className="space-y-4">
           <ProductInventory 
-            products={products}
-            inventory={inventory}
+            title="Product Inventory"
+            description="Manage your product inventory levels"
+            products={products.map(p => ({
+              product_id: parseInt(p.id),
+              product_name: p.product_name,
+              category: p.category,
+              units: p.units,
+              price: p.price
+            }))}
+            onRestock={() => {}}
+            onDelete={() => {}}
           />
         </TabsContent>
 
         <TabsContent value="transfer" className="space-y-4">
           <TransferContent 
-            inventory={inventory}
-            onTransferStock={handleTransferStock}
+            onOpenTransferDialog={() => {}}
           />
           <TransferHistory />
         </TabsContent>

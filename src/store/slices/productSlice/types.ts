@@ -17,6 +17,21 @@ export interface Product {
   };
 }
 
+export interface ProductState {
+  products: Product[];
+  categories: string[];
+  loading: boolean;
+  error: string | null;
+  setProducts: (products: Product[]) => void;
+  setCategories: (categories: string[]) => void;
+  addProduct: (productData: any) => void;
+  updateProduct: (productId: number, updatedData: any) => void;
+  deleteProduct: (productId: number) => void;
+  importProductsFromCSV: (file: File) => Promise<void>;
+  transferProduct: (productId: number, quantity: number, destinationType: string) => void;
+  restockProduct: (productId: number, quantity: number) => void;
+}
+
 export interface ProductSlice {
   products: Product[];
   loading: boolean;
@@ -27,4 +42,5 @@ export interface ProductSlice {
   deleteProduct: (id: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  loadProductsFromSupabase: () => Promise<void>;
 }

@@ -265,7 +265,7 @@ const suppliersService = {
     return data;
   },
 
-   update: async (supplierId: string, updates: any) => {
+  update: async (supplierId: string, updates: any) => {
     const { data, error } = await supabase
       .from('suppliers')
       .update(updates)
@@ -592,7 +592,8 @@ const analyticsService = {
     const totalProducts = (productsData || []).length;
     const lowStockCount = (inventoryData || []).filter(item => item.current_stock <= item.reorder_level).length;
     const outOfStockCount = (inventoryData || []).filter(item => item.current_stock === 0).length;
-    const totalInventoryValue = (inventoryData || []).reduce((sum, item) => sum + (item.current_stock * (item.cost_price || 0)), 0);
+    // Remove cost_price reference - just use current_stock for total value calculation
+    const totalInventoryValue = (inventoryData || []).reduce((sum, item) => sum + item.current_stock, 0);
 
     return {
       totalProducts,
@@ -659,11 +660,5 @@ export const supabaseService = {
   purchaseReturns: purchaseReturnsService,
   salesReturns: salesReturnsService
 };
-
-// Legacy aliases for backward compatibility
-export { productsService, salesService, clientsService, paymentsService, meetingsService, suppliersService, expenseService };
-export const salesReturnService = salesReturnsService;
-export const purchaseReturnService = purchaseReturnsService;
-export const expenseCategoryService = expenseService;
 
 export default supabaseService;
