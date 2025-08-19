@@ -1,11 +1,10 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, Warehouse, MoveHorizontal } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import useAppStore from "@/store/appStore";
 import { toast } from "sonner";
-import { Product } from "@/types";
+import { useSupabaseProducts } from "@/hooks/useSupabaseProducts";
+import { useSupabaseInventory } from "@/hooks/useSupabaseInventory";
 
 // Import components
 import { StockHeader } from "@/components/products/stock/StockHeader";
@@ -25,14 +24,14 @@ const Stock = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [openTransferDialog, setOpenTransferDialog] = useState(false);
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showRestockDialog, setShowRestockDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   
-  const products = useAppStore((state) => state.products);
-  const categories = useAppStore((state) => state.categories || []);
-  const addProduct = useAppStore((state) => state.addProduct);
-  const deleteProduct = useAppStore((state) => state.deleteProduct);
+  const { products, addProduct, deleteProduct, loading: productsLoading } = useSupabaseProducts();
+  const { inventory, updateInventory, transferStock, loading: inventoryLoading } = useSupabaseInventory();
+
+  const categories = [...new Set(products.map(p => p.category))];
 
   // Filter products based on search query
   const filteredProducts = products.filter((product) =>
@@ -40,7 +39,7 @@ const Stock = () => {
     product.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSubmit = (values: ProductFormValues) => {
+  const handleSubmit = async (values: ProductFormValues) => {
     try {
       // Add warehouse tag to product name if it's for warehouse
       // Ensure category is always provided
@@ -55,7 +54,20 @@ const Stock = () => {
         units: values.units || "0",
       };
       
-      addProduct(productData);
+      const newProduct = await addProduct(productData);
+      
+      // Also create inventory entry
+      if (newProduct) {
+        await updateInventory({
+          product_id: parseInt(newProduct.id),
+          product_name: newProduct.product_name,
+          current_stock: parseInt(values.units || "0"),
+          warehouse_stock: values.location === "warehouse" ? parseInt(values.units || "0") : 0,
+          local_stock: values.location === "local" ? parseInt(values.units || "0") : 0,
+          reorder_level: parseInt(values.reorder_level || "5")
+        });
+      }
+      
       toast.success("Product added successfully");
       setOpenDialog(false);
     } catch (error) {
@@ -65,9 +77,9 @@ const Stock = () => {
   };
 
   // Function to handle product deletion
-  const handleDeleteProduct = (productId: number) => {
+  const handleDeleteProduct = async (productId: string) => {
     try {
-      deleteProduct(productId);
+      await deleteProduct(productId);
       toast.success("Product deleted successfully");
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -76,7 +88,7 @@ const Stock = () => {
   };
 
   // Function to handle product restock
-  const handleRestock = (product: Product) => {
+  const handleRestock = (product: any) => {
     setSelectedProduct(product);
     setShowRestockDialog(true);
   };
@@ -85,6 +97,14 @@ const Stock = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
+
+  if (productsLoading || inventoryLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

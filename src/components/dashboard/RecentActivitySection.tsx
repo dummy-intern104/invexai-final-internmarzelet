@@ -1,87 +1,123 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { Sale, Product } from "@/types";
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock, TrendingUp, Package, Users } from "lucide-react";
+import { useSupabaseSales } from "@/hooks/useSupabaseSales";
+import { useSupabaseClients } from "@/hooks/useSupabaseClients";
+import { useSupabaseProducts } from "@/hooks/useSupabaseProducts";
 
-interface RecentActivitySectionProps {
-  sales: Sale[];
-  products: Product[];
-}
+const RecentActivitySection = () => {
+  const { sales, loading: salesLoading } = useSupabaseSales();
+  const { clients, loading: clientsLoading } = useSupabaseClients();
+  const { products, loading: productsLoading } = useSupabaseProducts();
 
-export const RecentActivitySection = ({ sales, products }: RecentActivitySectionProps) => {
-  const navigate = useNavigate();
+  const loading = salesLoading || clientsLoading || productsLoading;
 
-  const recentSales = sales
-    .sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
-    .slice(0, 5);
+  if (loading) {
+    return (
+      <Card className="animate-pulse">
+        <div className="h-64 bg-gray-200 rounded-lg m-4"></div>
+      </Card>
+    );
+  }
 
-  // Mock recent purchases
-  const recentPurchases = [
-    { id: 1, date: new Date().toISOString(), amount: 15000, supplier: "ABC Suppliers" },
-    { id: 2, date: new Date().toISOString(), amount: 8500, supplier: "XYZ Corp" }
-  ].slice(0, 3);
+  const recentSales = sales.slice(0, 5);
+  const recentClients = clients.slice(0, 3);
+  const recentProducts = products.slice(0, 3);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Sales Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentSales.length > 0 ? (
-              recentSales.map((sale, index) => {
-                const product = products.find(p => p.product_id === sale.product_id);
-                return (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-blue-600" />
+          Recent Activity
+        </CardTitle>
+        <CardDescription>
+          Latest updates across your business
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* Recent Sales */}
+          <div>
+            <h4 className="font-medium text-sm text-gray-700 mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Recent Sales
+            </h4>
+            <div className="space-y-2">
+              {recentSales.length > 0 ? (
+                recentSales.map((sale, index) => (
+                  <div key={sale.id || index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <div>
-                      <p className="font-medium">{product?.product_name || 'Unknown Product'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Qty: {sale.quantity_sold} • {new Date(sale.sale_date).toLocaleDateString()}
+                      <p className="text-sm font-medium">{sale.products?.product_name || 'Product'}</p>
+                      <p className="text-xs text-gray-500">
+                        {sale.clients?.name || 'Customer'} • {sale.quantity_sold} units
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">₹{(sale.selling_price * sale.quantity_sold).toFixed(2)}</p>
-                    </div>
+                    <span className="text-sm font-medium text-green-600">
+                      ₹{sale.total_amount?.toLocaleString()}
+                    </span>
                   </div>
-                );
-              })
-            ) : (
-              <p className="text-muted-foreground text-center py-4">No recent sales</p>
-            )}
-            <Button variant="outline" className="w-full" onClick={() => navigate("/sales")}>
-              View All Sales
-            </Button>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No recent sales</p>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Purchase Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentPurchases.map((purchase, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium">{purchase.supplier}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(purchase.date).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">₹{purchase.amount.toFixed(2)}</p>
-                </div>
-              </div>
-            ))}
-            <Button variant="outline" className="w-full" onClick={() => navigate("/purchases")}>
-              View All Purchases
-            </Button>
+          {/* Recent Clients */}
+          <div>
+            <h4 className="font-medium text-sm text-gray-700 mb-3 flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              New Clients
+            </h4>
+            <div className="space-y-2">
+              {recentClients.length > 0 ? (
+                recentClients.map((client, index) => (
+                  <div key={client.id || index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium">{client.name}</p>
+                      <p className="text-xs text-gray-500">{client.email || client.phone}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(client.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No new clients</p>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          {/* Recent Products */}
+          <div>
+            <h4 className="font-medium text-sm text-gray-700 mb-3 flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              New Products
+            </h4>
+            <div className="space-y-2">
+              {recentProducts.length > 0 ? (
+                recentProducts.map((product, index) => (
+                  <div key={product.id || index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium">{product.product_name}</p>
+                      <p className="text-xs text-gray-500">{product.category}</p>
+                    </div>
+                    <span className="text-sm font-medium text-blue-600">
+                      ₹{product.price?.toLocaleString()}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No new products</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
+
+export default RecentActivitySection;

@@ -309,34 +309,40 @@ export type Database = {
           current_stock: number
           id: string
           last_updated: string
+          local_stock: number
           location: string | null
           product_id: number
           product_name: string
           reorder_level: number
           reserved_stock: number
           user_id: string
+          warehouse_stock: number
         }
         Insert: {
           current_stock?: number
           id?: string
           last_updated?: string
+          local_stock?: number
           location?: string | null
           product_id: number
           product_name: string
           reorder_level?: number
           reserved_stock?: number
           user_id: string
+          warehouse_stock?: number
         }
         Update: {
           current_stock?: number
           id?: string
           last_updated?: string
+          local_stock?: number
           location?: string | null
           product_id?: number
           product_name?: string
           reorder_level?: number
           reserved_stock?: number
           user_id?: string
+          warehouse_stock?: number
         }
         Relationships: []
       }
@@ -478,6 +484,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      meetings: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          status: string
+          time: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          status?: string
+          time: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          time?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
