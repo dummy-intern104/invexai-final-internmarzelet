@@ -9,7 +9,7 @@ import { StockStats } from "@/components/products/stock/StockStats";
 import { ProductInventory } from "@/components/products/stock/ProductInventory";
 import { TransferContent } from "@/components/products/stock/TransferContent";
 import { TransferHistory } from "@/components/products/stock/TransferHistory";
-import { useSupabaseInventory, SupabaseInventory } from "@/hooks/useSupabaseInventory";
+import { useSupabaseInventory } from "@/hooks/useSupabaseInventory";
 import { useSupabaseProducts } from "@/hooks/useSupabaseProducts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 const Stock = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("inventory");
+  const [showReportDialog, setShowReportDialog] = useState(false);
   const { inventory, loading, transferStock } = useSupabaseInventory();
   const { products } = useSupabaseProducts();
 
@@ -55,7 +56,7 @@ const Stock = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <StockHeader />
+      <StockHeader onOpenReportDialog={() => setShowReportDialog(true)} />
       
       <StockStats products={products} />
 
@@ -74,13 +75,13 @@ const Stock = () => {
         <TabsContent value="inventory" className="space-y-4">
           <ProductInventory 
             products={products}
-            onTransferStock={handleTransferStock}
+            inventory={inventory}
           />
         </TabsContent>
 
         <TabsContent value="transfer" className="space-y-4">
           <TransferContent 
-            products={products}
+            inventory={inventory}
             onTransferStock={handleTransferStock}
           />
           <TransferHistory />

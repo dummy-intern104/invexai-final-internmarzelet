@@ -2,317 +2,272 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { DataTable } from '@/components/ui/data-table';
-import { BarChart } from '@/components/charts/BarChart';
-import { Download, Tags, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
-import { expenseService, expenseCategoryService } from '@/services/supabaseService';
-import { useQuery } from '@tanstack/react-query';
+import { Calendar, Download, TrendingUp, DollarSign, FileText, Building } from 'lucide-react';
+import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { supabaseService } from '@/services/supabaseService';
+import { format, parseISO } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 
 const ExpenseReports = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDataTo] = useState('');
-  const [filteredExpenses, setFilteredExpenses] = useState([]);
-  const [categoryData, setCategoryData] = useState([]);
-  const [trendData, setTrendData] = useState([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const { data: expenses = [], isLoading } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: expenseService.getAll,
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['expense-categories'],
-    queryFn: expenseCategoryService.getAll,
-  });
+  const loadExpenses = async () => {
+    try {
+      setLoading(true);
+      const data = await supabaseService.expenses.getAll();
+      setExpenses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+      toast.error('Failed to load expenses');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let filtered = [...expenses];
+    loadExpenses();
+  }, []);
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(expense => expense.category_id === selectedCategory);
-    }
+  // Calculate summary metrics
+  const filteredExpenses = Array.isArray(expenses) ? expenses.filter((expense) => {
+    const expenseDate = parseISO(expense.expense_date);
+    const matchesDateRange = !dateRange || 
+      (!dateRange.from || expenseDate >= dateRange.from) &&
+      (!dateRange.to || expenseDate <= dateRange.to);
+    const matchesCategory = selectedCategory === 'all' || expense.category === selectedCategory;
+    return matchesDateRange && matchesCategory;
+  }) : [];
 
-    // Filter by date range
-    if (dateFrom) {
-      filtered = filtered.filter(expense => new Date(expense.date) >= new Date(dateFrom));
-    }
-    if (dateTo) {
-      filtered = filtered.filter(expense => new Date(expense.date) <= new Date(dateTo));
-    }
+  const totalAmount = filteredExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+  const totalTransactions = filteredExpenses.length;
+  const uniqueCategories = [...new Set(filteredExpenses.map(expense => expense.category))];
+  const averageExpense = totalTransactions > 0 ? totalAmount / totalTransactions : 0;
 
-    setFilteredExpenses(filtered);
+  // Group expenses by category
+  const categoryBreakdown = uniqueCategories.map(category => {
+    const categoryExpenses = filteredExpenses.filter(expense => expense.category === category);
+    const categoryTotal = categoryExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    return {
+      category,
+      total: categoryTotal,
+      count: categoryExpenses.length,
+      percentage: totalAmount > 0 ? (categoryTotal / totalAmount) * 100 : 0
+    };
+  }).sort((a, b) => b.total - a.total);
 
-    // Calculate category-wise expenses
-    const categoryTotals = categories.map(category => {
-      const categoryExpenses = filtered.filter(expense => expense.category_id === category.id);
-      const total = categoryExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
-      return {
-        category: category.name,
-        total,
-        count: categoryExpenses.length
-      };
-    }).filter(item => item.total > 0);
+  const handleExportData = () => {
+    const csvData = filteredExpenses.map(expense => ({
+      Date: format(parseISO(expense.expense_date), 'yyyy-MM-dd'),
+      Category: expense.category,
+      Description: expense.description,
+      Amount: expense.amount,
+      'Payment Method': expense.payment_method || 'N/A'
+    }));
 
-    setCategoryData(categoryTotals);
-
-    // Calculate trend data based on selected period
-    if (selectedPeriod === 'month') {
-      const monthlyData = {};
-      filtered.forEach(expense => {
-        const month = format(new Date(expense.date), 'MMM yyyy');
-        if (!monthlyData[month]) {
-          monthlyData[month] = 0;
-        }
-        monthlyData[month] += Number(expense.amount);
-      });
-      
-      const trendArray = Object.entries(monthlyData).map(([month, total]) => ({
-        period: month,
-        amount: total
-      }));
-      setTrendData(trendArray);
-    } else if (selectedPeriod === 'quarter') {
-      const quarterlyData = {};
-      filtered.forEach(expense => {
-        const date = new Date(expense.date);
-        const quarter = `Q${Math.ceil((date.getMonth() + 1) / 3)} ${date.getFullYear()}`;
-        if (!quarterlyData[quarter]) {
-          quarterlyData[quarter] = 0;
-        }
-        quarterlyData[quarter] += Number(expense.amount);
-      });
-      
-      const trendArray = Object.entries(quarterlyData).map(([quarter, total]) => ({
-        period: quarter,
-        amount: total
-      }));
-      setTrendData(trendArray);
-    }
-  }, [expenses, categories, selectedCategory, selectedPeriod, dateFrom, dateTo]);
-
-  const columns = [
-    {
-      accessorKey: 'title',
-      header: 'Description',
-    },
-    {
-      accessorKey: 'expense_categories',
-      header: 'Category',
-      cell: ({ row }: any) => row.original.expense_categories?.name || 'Uncategorized',
-    },
-    {
-      accessorKey: 'amount',
-      header: 'Amount',
-      cell: ({ row }: any) => `₹${Number(row.getValue('amount')).toLocaleString()}`,
-    },
-    {
-      accessorKey: 'payment_method',
-      header: 'Payment Method',
-      cell: ({ row }: any) => row.getValue('payment_method') || 'Cash',
-    },
-    {
-      accessorKey: 'date',
-      header: 'Date',
-      cell: ({ row }: any) => format(new Date(row.getValue('date')), 'dd/MM/yyyy'),
-    },
-  ];
-
-  const exportToCSV = () => {
     const csvContent = [
-      ['Description', 'Category', 'Amount', 'Payment Method', 'Date'],
-      ...filteredExpenses.map(expense => [
-        expense.title,
-        expense.expense_categories?.name || 'Uncategorized',
-        expense.amount,
-        expense.payment_method || 'Cash',
-        format(new Date(expense.date), 'dd/MM/yyyy')
-      ])
-    ].map(row => row.join(',')).join('\n');
+      Object.keys(csvData[0] || {}).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'expense-reports.csv';
+    a.download = `expense-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Expense report exported successfully');
   };
-
-  const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const averageExpense = filteredExpenses.length > 0 ? totalExpenses / filteredExpenses.length : 0;
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading expense reports...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Expense Reports</h1>
-          <p className="text-muted-foreground">Expense trends and analysis by category</p>
+          <p className="text-muted-foreground">
+            Analyze your business expenses and spending patterns
+          </p>
         </div>
-        <Button onClick={exportToCSV} className="flex items-center gap-2">
-          <Download className="w-4 h-4" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleExportData} variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Export Report
+          </Button>
+        </div>
       </div>
 
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Filters
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-              <Label>Category</Label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Period</Label>
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Monthly</SelectItem>
-                  <SelectItem value="quarter">Quarterly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="dateFrom">From Date</Label>
-              <Input
-                id="dateFrom"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-sm font-medium">Date Range</label>
+              <DatePickerWithRange
+                date={dateRange}
+                onDateChange={setDateRange}
               />
             </div>
             <div>
-              <Label htmlFor="dateTo">To Date</Label>
-              <Input
-                id="dateTo"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDataTo(e.target.value)}
-              />
-            </div>
-            <div className="flex items-end">
-              <Button variant="outline" onClick={() => {
-                setSelectedCategory('all');
-                setDateFrom('');
-                setDataTo('');
-              }}>
-                Clear Filters
-              </Button>
+              <label className="text-sm font-medium">Category</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="all">All Categories</option>
+                {uniqueCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-2xl">{filteredExpenses.length}</CardTitle>
-            <CardDescription>Total Expenses</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{totalAmount.toLocaleString()}</div>
+          </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-2xl">₹{totalExpenses.toLocaleString()}</CardTitle>
-            <CardDescription>Total Amount</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalTransactions}</div>
+          </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-2xl">₹{averageExpense.toFixed(0)}</CardTitle>
-            <CardDescription>Average Expense</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{uniqueCategories.length}</div>
+          </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-2xl">{categoryData.length}</CardTitle>
-            <CardDescription>Active Categories</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Expense</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{Math.round(averageExpense).toLocaleString()}</div>
+          </CardContent>
         </Card>
       </div>
 
-      {categoryData.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tags className="w-5 h-5" />
-                Category-wise Expenses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <BarChart
-                  data={categoryData}
-                  dataKey="total"
-                  xAxisDataKey="category"
-                  fill="#f59e0b"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Expense Trends
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <BarChart
-                  data={trendData}
-                  dataKey="amount"
-                  xAxisDataKey="period"
-                  fill="#ef4444"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
+      {/* Category Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle>Expense Details</CardTitle>
+          <CardTitle>Expense Breakdown by Category</CardTitle>
+          <CardDescription>
+            View your expenses organized by category
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} data={filteredExpenses} />
+          <div className="space-y-4">
+            {categoryBreakdown.map((category, index) => (
+              <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="font-medium">{category.category}</div>
+                  <Badge variant="secondary">{category.count} transactions</Badge>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">₹{category.total.toLocaleString()}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {category.percentage.toFixed(1)}% of total
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Expenses */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Expenses</CardTitle>
+          <CardDescription>
+            Latest expense transactions matching your filters
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredExpenses.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">No expenses found</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                No expenses match your current filters.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <table className="min-w-full divide-y divide-border">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                      Category
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                      Amount
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-background divide-y divide-border">
+                  {filteredExpenses.slice(0, 10).map((expense, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {format(parseISO(expense.expense_date), 'dd/MM/yyyy')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant="outline">{expense.category}</Badge>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {expense.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        ₹{expense.amount?.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

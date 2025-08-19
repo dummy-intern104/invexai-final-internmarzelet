@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { GSTDetails } from '@/types';
 
@@ -335,11 +336,19 @@ const expenseService = {
 };
 
 // Sales Returns Service
-const salesReturnService = {
+const salesReturnsService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('sales_returns')
-      .select('*')
+      .select(`
+        *,
+        clients (
+          name
+        ),
+        products (
+          product_name
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -360,6 +369,18 @@ const salesReturnService = {
     return data;
   },
 
+  update: async (returnId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('sales_returns')
+      .update(updates)
+      .eq('id', returnId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   delete: async (returnId: string) => {
     const { error } = await supabase
       .from('sales_returns')
@@ -371,11 +392,16 @@ const salesReturnService = {
 };
 
 // Purchase Returns Service
-const purchaseReturnService = {
+const purchaseReturnsService = {
   getAll: async () => {
     const { data, error } = await supabase
       .from('purchase_returns')
-      .select('*')
+      .select(`
+        *,
+        suppliers (
+          supplier_name
+        )
+      `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -389,6 +415,18 @@ const purchaseReturnService = {
     const { data, error } = await supabase
       .from('purchase_returns')
       .insert([{ ...returnData, user_id: user.id }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  update: async (returnId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('purchase_returns')
+      .update(updates)
+      .eq('id', returnId)
       .select()
       .single();
 
@@ -554,7 +592,7 @@ const analyticsService = {
     const totalProducts = (productsData || []).length;
     const lowStockCount = (inventoryData || []).filter(item => item.current_stock <= item.reorder_level).length;
     const outOfStockCount = (inventoryData || []).filter(item => item.current_stock === 0).length;
-    const totalInventoryValue = (inventoryData || []).reduce((sum, item) => sum + (item.current_stock * item.price || 0), 0);
+    const totalInventoryValue = (inventoryData || []).reduce((sum, item) => sum + (item.current_stock * (item.cost_price || 0)), 0);
 
     return {
       totalProducts,
@@ -618,19 +656,14 @@ export const supabaseService = {
   analytics: analyticsService,
   suppliers: suppliersService,
   expenses: expenseService,
-  purchaseReturns: purchaseReturnService,
-  salesReturns: salesReturnService
+  purchaseReturns: purchaseReturnsService,
+  salesReturns: salesReturnsService
 };
 
 // Legacy aliases for backward compatibility
-export const productsService = supabaseService.products;
-export const salesService = supabaseService.sales;
-export const clientsService = supabaseService.clients;
-export const paymentsService = supabaseService.payments;
-export const meetingsService = supabaseService.meetings;
-export const suppliersService = supabaseService.suppliers;
-export const expenseService = supabaseService.expenses;
-export const salesReturnService = supabaseService.salesReturns;
-export const purchaseReturnService = supabaseService.purchaseReturns;
+export { productsService, salesService, clientsService, paymentsService, meetingsService, suppliersService, expenseService };
+export const salesReturnService = salesReturnsService;
+export const purchaseReturnService = purchaseReturnsService;
+export const expenseCategoryService = expenseService;
 
 export default supabaseService;

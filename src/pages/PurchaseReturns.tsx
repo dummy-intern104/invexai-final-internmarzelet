@@ -11,13 +11,18 @@ import { toast } from "sonner";
 
 interface PurchaseReturn {
   id: string;
-  supplier_name: string;
-  product_name: string;
-  quantity: number;
-  amount: number;
+  supplier_name?: string;
+  product_name?: string;
+  quantity?: number;
+  amount?: number;
   return_date: string;
-  reason: string;
+  reason?: string;
   status: string;
+  total_amount: number;
+  return_number?: string;
+  suppliers?: {
+    supplier_name: string;
+  };
 }
 
 const PurchaseReturns = () => {
@@ -30,7 +35,15 @@ const PurchaseReturns = () => {
     try {
       setLoading(true);
       const data = await supabaseService.purchaseReturns.getAll();
-      setReturns(Array.isArray(data) ? data : []);
+      // Transform data to match expected interface
+      const transformedData = data.map((item: any) => ({
+        ...item,
+        supplier_name: item.suppliers?.supplier_name || 'Unknown Supplier',
+        product_name: item.product_name || 'Unknown Product',
+        quantity: item.quantity || 1,
+        amount: item.total_amount || 0
+      }));
+      setReturns(transformedData);
     } catch (error) {
       console.error('Error loading purchase returns:', error);
       toast.error('Failed to load purchase returns');
@@ -66,7 +79,7 @@ const PurchaseReturns = () => {
 
   const totalReturns = Array.isArray(returns) ? returns.length : 0;
   const totalAmount = Array.isArray(returns) ? 
-    returns.reduce((sum, ret) => sum + (ret.amount || 0), 0) : 0;
+    returns.reduce((sum, ret) => sum + (ret.total_amount || 0), 0) : 0;
   const pendingReturns = Array.isArray(returns) ? 
     returns.filter(ret => ret.status === 'pending').length : 0;
 
@@ -207,7 +220,7 @@ const PurchaseReturns = () => {
                         {returnItem.quantity}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        ₹{returnItem.amount?.toLocaleString() || 0}
+                        ₹{returnItem.total_amount?.toLocaleString() || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {new Date(returnItem.return_date).toLocaleDateString()}
@@ -240,7 +253,7 @@ const PurchaseReturns = () => {
       <PurchaseReturnDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onSubmit={handleCreateReturn}
+        onReturnCreated={handleCreateReturn}
       />
     </div>
   );
