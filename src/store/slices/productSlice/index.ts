@@ -11,6 +11,7 @@ export const createProductSlice = (set: any, get: any) => {
   const inventoryOps = createInventoryOperations(set, get);
   // Pass only the required two arguments (set and get)
   const csvOps = createCSVImportOperations(set, get);
+  // Pass the required saveDataToSupabase function as third argument
   const supabaseOps = createSupabaseProductOperations(set, get);
   
   // Combine all operations
