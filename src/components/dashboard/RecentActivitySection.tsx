@@ -2,14 +2,62 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, TrendingUp, Package, Users } from "lucide-react";
-import { useSupabaseSales } from "@/hooks/useSupabaseSales";
-import { useSupabaseClients } from "@/hooks/useSupabaseClients";
-import { useSupabaseProducts } from "@/hooks/useSupabaseProducts";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const RecentActivitySection = () => {
-  const { sales, loading: salesLoading } = useSupabaseSales();
-  const { clients, loading: clientsLoading } = useSupabaseClients();
-  const { products, loading: productsLoading } = useSupabaseProducts();
+  // Fetch recent sales with proper joins
+  const { data: recentSales = [], isLoading: salesLoading } = useQuery({
+    queryKey: ['recent-sales'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sales')
+        .select(`
+          *,
+          clients (
+            name
+          ),
+          products (
+            product_name
+          )
+        `)
+        .order('sale_date', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch recent clients
+  const { data: recentClients = [], isLoading: clientsLoading } = useQuery({
+    queryKey: ['recent-clients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch recent products
+  const { data: recentProducts = [], isLoading: productsLoading } = useQuery({
+    queryKey: ['recent-products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   const loading = salesLoading || clientsLoading || productsLoading;
 
@@ -20,10 +68,6 @@ const RecentActivitySection = () => {
       </Card>
     );
   }
-
-  const recentSales = sales.slice(0, 5);
-  const recentClients = clients.slice(0, 3);
-  const recentProducts = products.slice(0, 3);
 
   return (
     <Card>
@@ -46,16 +90,16 @@ const RecentActivitySection = () => {
             </h4>
             <div className="space-y-2">
               {recentSales.length > 0 ? (
-                recentSales.map((sale, index) => (
-                  <div key={sale.id || index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                recentSales.map((sale) => (
+                  <div key={sale.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <div>
                       <p className="text-sm font-medium">{sale.products?.product_name || 'Product'}</p>
                       <p className="text-xs text-gray-500">
-                        {sale.clients?.name || 'Customer'} • {sale.quantity_sold} units
+                        {sale.clients?.name || 'Walk-in Customer'} • {sale.quantity_sold} units
                       </p>
                     </div>
                     <span className="text-sm font-medium text-green-600">
-                      ₹{sale.total_amount?.toLocaleString()}
+                      ₹{Number(sale.total_amount || 0).toLocaleString()}
                     </span>
                   </div>
                 ))
@@ -73,8 +117,8 @@ const RecentActivitySection = () => {
             </h4>
             <div className="space-y-2">
               {recentClients.length > 0 ? (
-                recentClients.map((client, index) => (
-                  <div key={client.id || index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                recentClients.map((client) => (
+                  <div key={client.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <div>
                       <p className="text-sm font-medium">{client.name}</p>
                       <p className="text-xs text-gray-500">{client.email || client.phone}</p>
@@ -98,14 +142,14 @@ const RecentActivitySection = () => {
             </h4>
             <div className="space-y-2">
               {recentProducts.length > 0 ? (
-                recentProducts.map((product, index) => (
-                  <div key={product.id || index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                recentProducts.map((product) => (
+                  <div key={product.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <div>
                       <p className="text-sm font-medium">{product.product_name}</p>
                       <p className="text-xs text-gray-500">{product.category}</p>
                     </div>
                     <span className="text-sm font-medium text-blue-600">
-                      ₹{product.price?.toLocaleString()}
+                      ₹{Number(product.price || 0).toLocaleString()}
                     </span>
                   </div>
                 ))

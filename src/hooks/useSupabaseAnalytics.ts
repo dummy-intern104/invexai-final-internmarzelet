@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabaseService } from '@/services/supabaseService';
+import { supabaseAnalyticsService } from '@/services/supabaseAnalyticsService';
 import { toast } from 'sonner';
 
 export interface DashboardAnalytics {
@@ -33,10 +33,10 @@ export const useSupabaseAnalytics = () => {
       
       // Load all analytics data in parallel
       const [salesAnalytics, inventoryAnalytics, revenueData, topProductsData] = await Promise.all([
-        supabaseService.analytics.getSalesAnalytics(),
-        supabaseService.analytics.getInventoryAnalytics(),
-        supabaseService.analytics.getRevenueChartData(),
-        supabaseService.analytics.getTopProductsData()
+        supabaseAnalyticsService.getSalesAnalytics(),
+        supabaseAnalyticsService.getInventoryAnalytics(),
+        supabaseAnalyticsService.getRevenueChartData(),
+        supabaseAnalyticsService.getTopProductsData()
       ]);
 
       setAnalytics({
@@ -44,9 +44,8 @@ export const useSupabaseAnalytics = () => {
         ...inventoryAnalytics
       });
       
-      // Ensure proper typing for chart data
-      setRevenueChartData(Array.isArray(revenueData) ? revenueData : []);
-      setTopProductsData(Array.isArray(topProductsData) ? topProductsData : []);
+      setRevenueChartData(revenueData);
+      setTopProductsData(topProductsData);
     } catch (error) {
       console.error('Error loading analytics:', error);
       toast.error('Failed to load analytics data');
@@ -61,12 +60,15 @@ export const useSupabaseAnalytics = () => {
     const insights = [];
 
     // Revenue insights
-    if (analytics.monthlyRevenue > analytics.yearlyRevenue * 0.2) {
-      insights.push({
-        title: 'Strong Monthly Performance',
-        description: `This month's revenue (₹${analytics.monthlyRevenue.toLocaleString()}) represents ${((analytics.monthlyRevenue / analytics.yearlyRevenue) * 100).toFixed(1)}% of your yearly revenue.`,
-        type: 'success' as const
-      });
+    if (analytics.monthlyRevenue > 0) {
+      const dailyAverage = analytics.monthlyRevenue / 30;
+      if (analytics.todayRevenue > dailyAverage * 1.2) {
+        insights.push({
+          title: 'Strong Sales Day',
+          description: `Today's revenue (₹${analytics.todayRevenue.toLocaleString()}) is 20% above your daily average. Great performance!`,
+          type: 'success' as const
+        });
+      }
     }
 
     // Inventory insights
@@ -87,11 +89,20 @@ export const useSupabaseAnalytics = () => {
     }
 
     // Transaction insights
-    if (analytics.todayTransactions > analytics.monthlyTransactions / 30 * 1.2) {
+    if (analytics.todayTransactions > 0) {
       insights.push({
-        title: 'High Activity Day',
-        description: `Today's transaction count (${analytics.todayTransactions}) is 20% above your daily average.`,
+        title: 'Active Business Day',
+        description: `${analytics.todayTransactions} transactions completed today. Keep up the good work!`,
         type: 'success' as const
+      });
+    }
+
+    // Default insight if no specific insights
+    if (insights.length === 0) {
+      insights.push({
+        title: 'Business Running Smoothly',
+        description: 'Your business operations are running well. Monitor key metrics to maintain performance.',
+        type: 'info' as const
       });
     }
 
