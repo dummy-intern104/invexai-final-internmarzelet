@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AIInsightCard } from '@/components/ai/AIInsightCard';
-import { TrendingUp, AlertTriangle, Package } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 
 interface AIInsight {
   title: string;
@@ -11,10 +11,10 @@ interface AIInsight {
 }
 
 interface InsightsSectionProps {
-  insights: AIInsight[];
+  insights?: AIInsight[];
 }
 
-const InsightsSection = ({ insights }: InsightsSectionProps) => {
+const InsightsSection = ({ insights = [] }: InsightsSectionProps) => {
   const defaultInsights: AIInsight[] = [
     {
       title: "Stock Analysis",
@@ -22,7 +22,7 @@ const InsightsSection = ({ insights }: InsightsSectionProps) => {
       type: "info"
     },
     {
-      title: "Sales Trends",
+      title: "Sales Trends", 
       description: "Track product performance and identify bestsellers.",
       type: "success"
     },
@@ -54,7 +54,6 @@ const InsightsSection = ({ insights }: InsightsSectionProps) => {
               title={insight.title}
               description={insight.description}
               type={insight.type}
-              icon={insight.type === 'warning' ? AlertTriangle : insight.type === 'success' ? TrendingUp : Package}
             />
           ))}
         </div>

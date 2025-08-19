@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatsCards } from "@/components/products/StatsCards";
 import { ProductsTable } from "@/components/products/ProductsTable";
 import { StockPredictor } from "@/components/products/StockPredictor";
 import { TabsContent, Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { InsightsSection } from "@/components/products/InsightsSection";
+import InsightsSection from "@/components/products/InsightsSection";
 import useAppStore from "@/store/appStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";

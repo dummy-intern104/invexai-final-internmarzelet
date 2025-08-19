@@ -44,8 +44,9 @@ export const useSupabaseAnalytics = () => {
         ...inventoryAnalytics
       });
       
-      setRevenueChartData(revenueData);
-      setTopProductsData(topProductsData);
+      // Ensure proper typing for chart data
+      setRevenueChartData(Array.isArray(revenueData) ? revenueData : []);
+      setTopProductsData(Array.isArray(topProductsData) ? topProductsData : []);
     } catch (error) {
       console.error('Error loading analytics:', error);
       toast.error('Failed to load analytics data');

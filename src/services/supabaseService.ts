@@ -1,42 +1,25 @@
-
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl) {
-  throw new Error('VITE_SUPABASE_URL is not defined in .env.local');
-}
-
-if (!supabaseKey) {
-  throw new Error('VITE_SUPABASE_ANON_KEY is not defined in .env.local');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/integrations/supabase/client';
+import { GSTDetails } from '@/types';
 
 // Products Service
-export const productsService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
+const productsService = {
+  getAll: async () => {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('user_id', user.user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   },
 
-  async create(product: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
+  create: async (productData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
       .from('products')
-      .insert([{ ...product, user_id: user.user.id }])
+      .insert([{ ...productData, user_id: user.id }])
       .select()
       .single();
 
@@ -44,11 +27,11 @@ export const productsService = {
     return data;
   },
 
-  async update(id: string, updates: any) {
+  update: async (productId: string, updates: any) => {
     const { data, error } = await supabase
       .from('products')
       .update(updates)
-      .eq('id', id)
+      .eq('id', productId)
       .select()
       .single();
 
@@ -56,154 +39,19 @@ export const productsService = {
     return data;
   },
 
-  async delete(id: string) {
+  delete: async (productId: string) => {
     const { error } = await supabase
       .from('products')
       .delete()
-      .eq('id', id);
+      .eq('id', productId);
 
     if (error) throw error;
-  }
-};
-
-// Suppliers Service
-export const suppliersService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('suppliers')
-      .select('*')
-      .eq('user_id', user.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async create(supplier: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('suppliers')
-      .insert([{ ...supplier, user_id: user.user.id }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async update(id: string, updates: any) {
-    const { data, error } = await supabase
-      .from('suppliers')
-      .update(updates)
-      .eq('supplier_id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('suppliers')
-      .delete()
-      .eq('supplier_id', id);
-
-    if (error) throw error;
-  }
-};
-
-// Inventory Service
-export const inventoryService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('inventory')
-      .select(`
-        *,
-        products (
-          product_name,
-          price
-        )
-      `)
-      .eq('user_id', user.user.id)
-      .order('last_updated', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async createOrUpdate(inventoryData: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('inventory')
-      .upsert([{ ...inventoryData, user_id: user.user.id }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async transferStock(productId: number, quantity: number, from: 'warehouse' | 'local', to: 'warehouse' | 'local') {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    // Get current inventory
-    const { data: inventory, error: fetchError } = await supabase
-      .from('inventory')
-      .select('*')
-      .eq('product_id', productId)
-      .eq('user_id', user.user.id)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    // Calculate new stock levels
-    const updates: any = {};
-    if (from === 'warehouse' && to === 'local') {
-      if (inventory.warehouse_stock < quantity) {
-        throw new Error('Not enough warehouse stock');
-      }
-      updates.warehouse_stock = inventory.warehouse_stock - quantity;
-      updates.local_stock = inventory.local_stock + quantity;
-    } else if (from === 'local' && to === 'warehouse') {
-      if (inventory.local_stock < quantity) {
-        throw new Error('Not enough local stock');
-      }
-      updates.local_stock = inventory.local_stock - quantity;
-      updates.warehouse_stock = inventory.warehouse_stock + quantity;
-    }
-
-    // Update inventory
-    const { data, error } = await supabase
-      .from('inventory')
-      .update(updates)
-      .eq('product_id', productId)
-      .eq('user_id', user.user.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
   }
 };
 
 // Sales Service
-export const salesService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
+const salesService = {
+  getAll: async () => {
     const { data, error } = await supabase
       .from('sales')
       .select(`
@@ -215,60 +63,63 @@ export const salesService = {
           name
         )
       `)
-      .eq('user_id', user.user.id)
-      .order('sale_date', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async create(sale: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('sales')
-      .insert([{ ...sale, user_id: user.user.id }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('sales')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-  }
-};
-
-// Clients Service
-export const clientsService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .eq('user_id', user.user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   },
 
-  async create(client: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
+  create: async (saleData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('sales')
+      .insert([{ ...saleData, user_id: user.id }])
+      .select(`
+        *,
+        products (
+          product_name
+        ),
+        clients (
+          name
+        )
+      `)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  delete: async (saleId: string) => {
+    const { error } = await supabase
+      .from('sales')
+      .delete()
+      .eq('id', saleId);
+
+    if (error) throw error;
+  }
+};
+
+// Clients Service
+const clientsService = {
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  create: async (clientData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
       .from('clients')
-      .insert([{ ...client, user_id: user.user.id }])
+      .insert([{ ...clientData, user_id: user.id }])
       .select()
       .single();
 
@@ -276,11 +127,11 @@ export const clientsService = {
     return data;
   },
 
-  async update(id: string, updates: any) {
+  update: async (clientId: string, updates: any) => {
     const { data, error } = await supabase
       .from('clients')
       .update(updates)
-      .eq('id', id)
+      .eq('id', clientId)
       .select()
       .single();
 
@@ -288,22 +139,19 @@ export const clientsService = {
     return data;
   },
 
-  async delete(id: string) {
+  delete: async (clientId: string) => {
     const { error } = await supabase
       .from('clients')
       .delete()
-      .eq('id', id);
+      .eq('id', clientId);
 
     if (error) throw error;
   }
 };
 
 // Payments Service
-export const paymentsService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
+const paymentsService = {
+  getAll: async () => {
     const { data, error } = await supabase
       .from('payments')
       .select(`
@@ -312,20 +160,19 @@ export const paymentsService = {
           name
         )
       `)
-      .eq('user_id', user.user.id)
       .order('payment_date', { ascending: false });
 
     if (error) throw error;
     return data || [];
   },
 
-  async create(payment: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
+  create: async (paymentData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
       .from('payments')
-      .insert([{ ...payment, user_id: user.user.id }])
+      .insert([{ ...paymentData, user_id: user.id }])
       .select()
       .single();
 
@@ -333,39 +180,35 @@ export const paymentsService = {
     return data;
   },
 
-  async delete(id: string) {
+  delete: async (paymentId: string) => {
     const { error } = await supabase
       .from('payments')
       .delete()
-      .eq('id', id);
+      .eq('id', paymentId);
 
     if (error) throw error;
   }
 };
 
 // Meetings Service
-export const meetingsService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
+const meetingsService = {
+  getAll: async () => {
     const { data, error } = await supabase
       .from('meetings')
       .select('*')
-      .eq('user_id', user.user.id)
       .order('date', { ascending: false });
 
     if (error) throw error;
     return data || [];
   },
 
-  async create(meeting: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
+  create: async (meetingData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
       .from('meetings')
-      .insert([{ ...meeting, user_id: user.user.id }])
+      .insert([{ ...meetingData, user_id: user.id }])
       .select()
       .single();
 
@@ -373,11 +216,11 @@ export const meetingsService = {
     return data;
   },
 
-  async update(id: string, updates: any) {
+  update: async (meetingId: string, updates: any) => {
     const { data, error } = await supabase
       .from('meetings')
       .update(updates)
-      .eq('id', id)
+      .eq('id', meetingId)
       .select()
       .single();
 
@@ -385,43 +228,131 @@ export const meetingsService = {
     return data;
   },
 
-  async delete(id: string) {
+  delete: async (meetingId: string) => {
     const { error } = await supabase
       .from('meetings')
       .delete()
-      .eq('id', id);
+      .eq('id', meetingId);
+
+    if (error) throw error;
+  }
+};
+
+// Suppliers Service
+const suppliersService = {
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .order('company_name', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  create: async (supplierData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('suppliers')
+      .insert([{ ...supplierData, user_id: user.id }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+   update: async (supplierId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .update(updates)
+      .eq('id', supplierId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  delete: async (supplierId: string) => {
+    const { error } = await supabase
+      .from('suppliers')
+      .delete()
+      .eq('id', supplierId);
+
+    if (error) throw error;
+  }
+};
+
+// Expense Service
+const expenseService = {
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .order('expense_date', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  create: async (expenseData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert([{ ...expenseData, user_id: user.id }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  update: async (expenseId: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('expenses')
+      .update(updates)
+      .eq('id', expenseId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  delete: async (expenseId: string) => {
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', expenseId);
 
     if (error) throw error;
   }
 };
 
 // Sales Returns Service
-export const salesReturnService = {
-  async getAll() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
+const salesReturnService = {
+  getAll: async () => {
     const { data, error } = await supabase
       .from('sales_returns')
-      .select(`
-        *,
-        products(product_name),
-        clients(name)
-      `)
-      .eq('user_id', user.user.id)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
   },
 
-  async create(returnData: any) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
+  create: async (returnData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
       .from('sales_returns')
-      .insert([{ ...returnData, user_id: user.user.id }])
+      .insert([{ ...returnData, user_id: user.id }])
       .select()
       .single();
 
@@ -429,99 +360,201 @@ export const salesReturnService = {
     return data;
   },
 
-  async update(id: string, updates: any) {
-    const { data, error } = await supabase
-      .from('sales_returns')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async delete(id: string) {
+  delete: async (returnId: string) => {
     const { error } = await supabase
       .from('sales_returns')
       .delete()
-      .eq('id', id);
+      .eq('id', returnId);
 
     if (error) throw error;
   }
 };
 
-// Analytics Service
-export const analyticsService = {
-  async getSalesAnalytics() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const today = new Date().toISOString().split('T')[0];
-    const thisMonth = new Date().toISOString().slice(0, 7);
-    const thisYear = new Date().getFullYear();
-
-    // Get sales data
-    const { data: sales, error } = await supabase
-      .from('sales')
-      .select('total_amount, sale_date')
-      .eq('user_id', user.user.id);
+// Purchase Returns Service
+const purchaseReturnService = {
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('purchase_returns')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
+    return data || [];
+  },
 
-    const todayRevenue = sales?.filter(s => s.sale_date === today)
-      .reduce((sum, s) => sum + s.total_amount, 0) || 0;
+  create: async (returnData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
 
-    const monthlyRevenue = sales?.filter(s => s.sale_date.startsWith(thisMonth))
-      .reduce((sum, s) => sum + s.total_amount, 0) || 0;
+    const { data, error } = await supabase
+      .from('purchase_returns')
+      .insert([{ ...returnData, user_id: user.id }])
+      .select()
+      .single();
 
-    const yearlyRevenue = sales?.filter(s => s.sale_date.startsWith(thisYear.toString()))
-      .reduce((sum, s) => sum + s.total_amount, 0) || 0;
+    if (error) throw error;
+    return data;
+  },
 
-    const todayTransactions = sales?.filter(s => s.sale_date === today).length || 0;
-    const monthlyTransactions = sales?.filter(s => s.sale_date.startsWith(thisMonth)).length || 0;
-    const yearlyTransactions = sales?.filter(s => s.sale_date.startsWith(thisYear.toString())).length || 0;
+  delete: async (returnId: string) => {
+    const { error } = await supabase
+      .from('purchase_returns')
+      .delete()
+      .eq('id', returnId);
+
+    if (error) throw error;
+  }
+};
+
+// Enhanced inventory service with getByProduct method
+const inventoryService = {
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  createOrUpdate: async (inventoryData: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('inventory')
+      .upsert({ ...inventoryData, user_id: user.id }, { onConflict: 'product_id' })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  transferStock: async (productId: number, quantity: number, from: 'warehouse' | 'local', to: 'warehouse' | 'local') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Fetch current inventory
+    const { data: inventoryData, error: inventoryError } = await supabase
+      .from('inventory')
+      .select('*')
+      .eq('product_id', productId)
+      .single();
+
+    if (inventoryError) throw inventoryError;
+    if (!inventoryData) throw new Error('Inventory not found');
+
+    const fromKey = `${from}_stock`;
+    const toKey = `${to}_stock`;
+
+    if (inventoryData[fromKey] < quantity) {
+      throw new Error(`Insufficient stock in ${from}`);
+    }
+
+    const updates = {
+      [fromKey]: inventoryData[fromKey] - quantity,
+      [toKey]: inventoryData[toKey] + quantity,
+      user_id: user.id
+    };
+
+    const { data, error } = await supabase
+      .from('inventory')
+      .update(updates)
+      .eq('product_id', productId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  getByProduct: async (productId: number) => {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*')
+      .eq('product_id', productId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+};
+
+const analyticsService = {
+  getSalesAnalytics: async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const { data: todaySales, error: todayError } = await supabase
+      .from('sales')
+      .select('total_amount')
+      .eq('sale_date', today);
+
+    const { data: monthlySales, error: monthlyError } = await supabase
+      .from('sales')
+      .select('total_amount')
+      .gte('sale_date', thirtyDaysAgo);
+
+    const { data: yearlySales, error: yearlyError } = await supabase
+      .from('sales')
+      .select('total_amount')
+      .gte('sale_date', oneYearAgo);
+
+    const { data: todayTransactions, error: todayTransactionsError } = await supabase
+      .from('sales')
+      .select('*')
+      .eq('sale_date', today);
+
+    const { data: monthlyTransactions, error: monthlyTransactionsError } = await supabase
+      .from('sales')
+      .select('*')
+      .gte('sale_date', thirtyDaysAgo);
+
+     const { data: yearlyTransactions, error: yearlyTransactionsError } = await supabase
+      .from('sales')
+      .select('*')
+      .gte('sale_date', oneYearAgo);
+
+    if (todayError || monthlyError || yearlyError || todayTransactionsError || monthlyTransactionsError || yearlyTransactionsError) {
+      throw new Error('Error fetching sales data');
+    }
+
+    const todayRevenue = (todaySales || []).reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+    const monthlyRevenue = (monthlySales || []).reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+    const yearlyRevenue = (yearlySales || []).reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+    const todayTrans = (todayTransactions || []).length;
+    const monthlyTrans = (monthlyTransactions || []).length;
+    const yearlyTrans = (yearlyTransactions || []).length;
 
     return {
       todayRevenue,
       monthlyRevenue,
       yearlyRevenue,
-      todayTransactions,
-      monthlyTransactions,
-      yearlyTransactions
+      todayTransactions: todayTrans,
+      monthlyTransactions: monthlyTrans,
+      yearlyTransactions: yearlyTrans
     };
   },
 
-  async getInventoryAnalytics() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data: products } = await supabase
+  getInventoryAnalytics: async () => {
+    const { data: productsData, error: productsError } = await supabase
       .from('products')
-      .select('*')
-      .eq('user_id', user.user.id);
+      .select('*');
 
-    const { data: inventory } = await supabase
+    const { data: inventoryData, error: inventoryError } = await supabase
       .from('inventory')
-      .select('current_stock, reorder_level')
-      .eq('user_id', user.user.id);
+      .select('*');
 
-    const totalProducts = products?.length || 0;
-    const lowStockCount = inventory?.filter(i => i.current_stock <= i.reorder_level && i.current_stock > 0).length || 0;
-    const outOfStockCount = inventory?.filter(i => i.current_stock === 0).length || 0;
+    if (productsError || inventoryError) {
+      throw new Error('Error fetching inventory data');
+    }
 
-    // Calculate total inventory value
-    const { data: inventoryWithProducts } = await supabase
-      .from('inventory')
-      .select(`
-        current_stock,
-        products(price)
-      `)
-      .eq('user_id', user.user.id);
-
-    const totalInventoryValue = inventoryWithProducts?.reduce((sum, item) => {
-      return sum + (item.current_stock * (item.products?.price || 0));
-    }, 0) || 0;
+    const totalProducts = (productsData || []).length;
+    const lowStockCount = (inventoryData || []).filter(item => item.current_stock <= item.reorder_level).length;
+    const outOfStockCount = (inventoryData || []).filter(item => item.current_stock === 0).length;
+    const totalInventoryValue = (inventoryData || []).reduce((sum, item) => sum + (item.current_stock * item.price || 0), 0);
 
     return {
       totalProducts,
@@ -531,60 +564,50 @@ export const analyticsService = {
     };
   },
 
-  async getRevenueChartData() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data: sales, error } = await supabase
+  getRevenueChartData: async (): Promise<Array<{name: string, value: number}>> => {
+    const { data, error } = await supabase
       .from('sales')
-      .select('total_amount, sale_date')
-      .eq('user_id', user.user.id)
+      .select('sale_date, total_amount')
+      .gte('sale_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
       .order('sale_date', { ascending: true });
 
     if (error) throw error;
 
-    // Group by month for the chart
-    const monthlyData = sales?.reduce((acc: any, sale) => {
-      const month = sale.sale_date.slice(0, 7);
-      if (!acc[month]) {
-        acc[month] = { name: month, value: 0 };
-      }
-      acc[month].value += sale.total_amount;
-      return acc;
-    }, {});
+    // Group by date and sum amounts
+    const groupedData: { [key: string]: number } = {};
+    (data || []).forEach((sale: any) => {
+      const date = new Date(sale.sale_date).toLocaleDateString();
+      groupedData[date] = (groupedData[date] || 0) + (sale.total_amount || 0);
+    });
 
-    return Object.values(monthlyData || {});
+    return Object.entries(groupedData).map(([name, value]) => ({ name, value }));
   },
 
-  async getTopProductsData() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error('Not authenticated');
-
-    const { data: sales, error } = await supabase
+  getTopProductsData: async (): Promise<Array<{name: string, value: number}>> => {
+    const { data, error } = await supabase
       .from('sales')
       .select(`
         quantity_sold,
-        products(product_name)
+        products!inner(product_name)
       `)
-      .eq('user_id', user.user.id);
+      .limit(10);
 
     if (error) throw error;
 
-    // Group by product
-    const productData = sales?.reduce((acc: any, sale) => {
-      const productName = sale.products?.product_name || 'Unknown';
-      if (!acc[productName]) {
-        acc[productName] = { name: productName, value: 0 };
-      }
-      acc[productName].value += sale.quantity_sold;
-      return acc;
-    }, {});
+    // Group by product and sum quantities
+    const groupedData: { [key: string]: number } = {};
+    (data || []).forEach((sale: any) => {
+      const productName = sale.products?.product_name || 'Unknown Product';
+      groupedData[productName] = (groupedData[productName] || 0) + (sale.quantity_sold || 0);
+    });
 
-    return Object.values(productData || {}).slice(0, 5); // Top 5
+    return Object.entries(groupedData)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
   }
 };
 
-// Create a unified service object
 export const supabaseService = {
   products: productsService,
   sales: salesService,
@@ -592,26 +615,22 @@ export const supabaseService = {
   payments: paymentsService,
   meetings: meetingsService,
   inventory: inventoryService,
-  analytics: analyticsService
+  analytics: analyticsService,
+  suppliers: suppliersService,
+  expenses: expenseService,
+  purchaseReturns: purchaseReturnService,
+  salesReturns: salesReturnService
 };
 
-// Aliases for backward compatibility
-export const clientService = clientsService;
-export const supplierService = suppliersService;
-export const productService = productsService;
-export const paymentService = paymentsService;
+// Legacy aliases for backward compatibility
+export const productsService = supabaseService.products;
+export const salesService = supabaseService.sales;
+export const clientsService = supabaseService.clients;
+export const paymentsService = supabaseService.payments;
+export const meetingsService = supabaseService.meetings;
+export const suppliersService = supabaseService.suppliers;
+export const expenseService = supabaseService.expenses;
+export const salesReturnService = supabaseService.salesReturns;
+export const purchaseReturnService = supabaseService.purchaseReturns;
 
-// Mock expense service for now (to be implemented later)
-export const expenseService = {
-  async getAll() { return []; },
-  async create() { return null; },
-  async update() { return null; },
-  async delete() { return null; }
-};
-
-export const expenseCategoryService = {
-  async getAll() { return []; },
-  async create() { return null; },
-  async update() { return null; },
-  async delete() { return null; }
-};
+export default supabaseService;

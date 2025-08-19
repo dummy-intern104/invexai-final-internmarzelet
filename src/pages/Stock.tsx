@@ -1,74 +1,101 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Plus, ArrowLeft, Package, TrendingUp } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ProductInventory } from '@/components/products/stock/ProductInventory';
-import { TransferContent } from '@/components/products/stock/TransferContent';
-import { StockStats } from '@/components/products/stock/StockStats';
-import { useSupabaseInventory } from '@/hooks/useSupabaseInventory';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Plus, Package, ArrowUpDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StockHeader } from "@/components/products/stock/StockHeader";
+import { StockStats } from "@/components/products/stock/StockStats";
+import { ProductInventory } from "@/components/products/stock/ProductInventory";
+import { TransferContent } from "@/components/products/stock/TransferContent";
+import { TransferHistory } from "@/components/products/stock/TransferHistory";
+import { useSupabaseInventory, SupabaseInventory } from "@/hooks/useSupabaseInventory";
+import { useSupabaseProducts } from "@/hooks/useSupabaseProducts";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Stock = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  const { inventory, loading, updateInventory, transferStock } = useSupabaseInventory();
+  const [activeTab, setActiveTab] = useState("inventory");
+  const { inventory, loading, transferStock } = useSupabaseInventory();
+  const { products } = useSupabaseProducts();
 
-  const handleStockTransfer = async (productId: number, quantity: number, from: 'warehouse' | 'local', to: 'warehouse' | 'local') => {
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please log in to access stock management');
+        navigate('/auth');
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  const handleTransferStock = async (
+    productId: number, 
+    quantity: number, 
+    from: 'warehouse' | 'local', 
+    to: 'warehouse' | 'local'
+  ) => {
     try {
       await transferStock(productId, quantity, from, to);
     } catch (error) {
-      console.error('Error transferring stock:', error);
+      console.error('Transfer failed:', error);
     }
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading stock data...</div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Stock Management</h1>
-          <p className="text-muted-foreground">Manage your inventory and stock levels</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-          <Link to="/products/add">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Product
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-8 animate-fade-in">
+      <StockHeader />
+      
+      <StockStats products={products} />
 
-      <StockStats inventory={inventory} />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="inventory">
+            <Package className="mr-2 h-4 w-4" />
+            Inventory
+          </TabsTrigger>
+          <TabsTrigger value="transfer">
+            <ArrowUpDown className="mr-2 h-4 w-4" />
+            Stock Transfer
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <TabsContent value="inventory" className="space-y-4">
           <ProductInventory 
-            inventory={inventory}
-            onTransferStock={handleStockTransfer}
+            products={products}
+            onTransferStock={handleTransferStock}
           />
-        </div>
-        <div>
+        </TabsContent>
+
+        <TabsContent value="transfer" className="space-y-4">
           <TransferContent 
-            inventory={inventory}
-            onTransferStock={handleStockTransfer}
+            products={products}
+            onTransferStock={handleTransferStock}
           />
-        </div>
+          <TransferHistory />
+        </TabsContent>
+      </Tabs>
+
+      <div className="fixed bottom-6 right-6">
+        <Button
+          onClick={() => navigate("/products/add")}
+          size="lg"
+          className="rounded-full shadow-lg"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Add Product
+        </Button>
       </div>
     </div>
   );
