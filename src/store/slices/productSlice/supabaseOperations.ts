@@ -12,12 +12,11 @@ export interface SupabaseProductOperations {
   syncInventoryLevel: (productId: string, newLevel: number) => Promise<void>;
 }
 
-export const createSupabaseProductOperations: StateCreator<
-  ProductSlice,
-  [],
-  [],
-  SupabaseProductOperations
-> = (set, get) => ({
+export const createSupabaseProductOperations = (
+  set: any, 
+  get: any, 
+  api: any
+): SupabaseProductOperations => ({
   loadProductsFromSupabase: async () => {
     try {
       set({ loading: true });

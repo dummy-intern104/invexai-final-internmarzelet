@@ -11,8 +11,8 @@ export const createProductSlice = (set: any, get: any) => {
   const inventoryOps = createInventoryOperations(set, get);
   // Pass only the required two arguments (set and get)
   const csvOps = createCSVImportOperations(set, get);
-  // Pass only set and get as the StateCreator expects
-  const supabaseOps = createSupabaseProductOperations(set, get);
+  // Pass set, get, and the state API as the third argument
+  const supabaseOps = createSupabaseProductOperations(set, get, { set, get });
   
   // Combine all operations
   return {
