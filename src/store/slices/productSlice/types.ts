@@ -1,22 +1,8 @@
 
-export interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  units: string;
-  reorder_level: number;
-  expiry_date?: string;
-  created_at?: string;
-  user_id?: string;
-  supplier?: {
-    company_name: string;
-    gst_number: string;
-    address: string;
-    city: string;
-    state: string;
-    pincode: string;
-  };
+import { Product as GlobalProduct } from '@/types';
+
+export interface Product extends GlobalProduct {
+  // Use the global Product interface as base
 }
 
 export interface ProductState {
@@ -35,17 +21,12 @@ export interface ProductState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   loadProductsFromSupabase: () => Promise<void>;
+  addProductToSupabase: (product: Omit<Product, 'id'>) => Promise<void>;
+  updateProductInSupabase: (productId: string, updates: Partial<Product>) => Promise<void>;
+  deleteProductFromSupabase: (productId: string) => Promise<void>;
+  syncInventoryLevel: (productId: string, newLevel: number) => Promise<void>;
 }
 
-export interface ProductSlice {
-  products: Product[];
-  loading: boolean;
-  error: string | null;
-  setProducts: (products: Product[]) => void;
-  addProduct: (product: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, product: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  loadProductsFromSupabase: () => Promise<void>;
+export interface ProductSlice extends ProductState {
+  // ProductSlice extends ProductState for compatibility
 }

@@ -7,12 +7,17 @@ import { createCSVImportOperations } from './csvImport';
 import { createSupabaseProductOperations } from './supabaseOperations';
 
 export const createProductSlice = (set: any, get: any) => {
+  const basicOps = createBasicOperations(set, get);
+  const inventoryOps = createInventoryOperations(set, get);
+  const csvOps = createCSVImportOperations(set, get);
+  const supabaseOps = createSupabaseProductOperations(set, get);
+  
   // Combine all operations
   return {
-    ...createBasicOperations(set, get),
-    ...createInventoryOperations(set, get),
-    ...createCSVImportOperations(set, get),
-    ...createSupabaseProductOperations(set, get),
+    ...basicOps,
+    ...inventoryOps,
+    ...csvOps,
+    ...supabaseOps,
   };
 };
 

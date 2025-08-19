@@ -47,16 +47,24 @@ const Stock = () => {
     }
   };
 
-  // Transform products to match Product interface
+  // Transform products to match Product interface from /types/index.ts
   const transformedProducts: Product[] = products.map(p => ({
     id: p.id,
-    name: p.product_name,
+    product_id: parseInt(p.id), // Add backward compatibility
+    product_name: p.product_name,
     category: p.category,
     price: p.price,
     units: p.units,
-    reorder_level: 0, // Default reorder level
+    reorder_level: p.reorder_level || 0,
     created_at: p.created_at,
-    user_id: p.user_id
+    user_id: p.user_id,
+    expiry_date: p.expiry_date,
+    supplier_company_name: p.supplier_company_name,
+    supplier_gst_number: p.supplier_gst_number,
+    supplier_address: p.supplier_address,
+    supplier_city: p.supplier_city,
+    supplier_state: p.supplier_state,
+    supplier_pincode: p.supplier_pincode
   }));
 
   if (loading) {
@@ -69,7 +77,7 @@ const Stock = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <StockHeader />
+      <StockHeader onOpenReportDialog={() => setShowReportDialog(true)} />
       
       <StockStats products={transformedProducts} />
 
