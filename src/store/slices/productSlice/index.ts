@@ -9,7 +9,8 @@ import { createSupabaseProductOperations } from './supabaseOperations';
 export const createProductSlice = (set: any, get: any) => {
   const basicOps = createBasicOperations(set, get);
   const inventoryOps = createInventoryOperations(set, get);
-  const csvOps = createCSVImportOperations(set, get);
+  // Pass the required third argument (products getter function)
+  const csvOps = createCSVImportOperations(set, get, () => get().products || []);
   const supabaseOps = createSupabaseProductOperations(set, get);
   
   // Combine all operations

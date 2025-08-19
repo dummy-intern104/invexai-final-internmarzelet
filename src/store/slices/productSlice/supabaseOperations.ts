@@ -25,20 +25,21 @@ export const createSupabaseProductOperations: StateCreator<
       
       const products: Product[] = supabaseProducts.map((sp: any) => ({
         id: sp.id,
-        name: sp.product_name,
+        product_id: parseInt(sp.id),
+        product_name: sp.product_name,
         category: sp.category,
         price: sp.price,
         units: sp.units,
         reorder_level: sp.reorder_level,
         expiry_date: sp.expiry_date || undefined,
-        supplier: {
-          company_name: sp.supplier_company_name || '',
-          gst_number: sp.supplier_gst_number || '',
-          address: sp.supplier_address || '',
-          city: sp.supplier_city || '',
-          state: sp.supplier_state || '',
-          pincode: sp.supplier_pincode || ''
-        }
+        created_at: sp.created_at,
+        user_id: sp.user_id,
+        supplier_company_name: sp.supplier_company_name || '',
+        supplier_gst_number: sp.supplier_gst_number || '',
+        supplier_address: sp.supplier_address || '',
+        supplier_city: sp.supplier_city || '',
+        supplier_state: sp.supplier_state || '',
+        supplier_pincode: sp.supplier_pincode || ''
       }));
 
       // Load inventory data for each product
@@ -71,18 +72,18 @@ export const createSupabaseProductOperations: StateCreator<
   addProductToSupabase: async (product: Omit<Product, 'id'>) => {
     try {
       const productData = {
-        product_name: product.name,
+        product_name: product.product_name,
         category: product.category,
         price: product.price,
         units: product.units,
         reorder_level: product.reorder_level,
         expiry_date: product.expiry_date,
-        supplier_company_name: product.supplier?.company_name,
-        supplier_gst_number: product.supplier?.gst_number,
-        supplier_address: product.supplier?.address,
-        supplier_city: product.supplier?.city,
-        supplier_state: product.supplier?.state,
-        supplier_pincode: product.supplier?.pincode
+        supplier_company_name: product.supplier_company_name,
+        supplier_gst_number: product.supplier_gst_number,
+        supplier_address: product.supplier_address,
+        supplier_city: product.supplier_city,
+        supplier_state: product.supplier_state,
+        supplier_pincode: product.supplier_pincode
       };
 
       const newProduct = await supabaseService.products.create(productData);
@@ -95,7 +96,7 @@ export const createSupabaseProductOperations: StateCreator<
         local_stock: parseInt(product.units as string) || 0,
         reserved_stock: 0,
         reorder_level: product.reorder_level,
-        product_name: product.name
+        product_name: product.product_name
       });
 
       await get().loadProductsFromSupabase();
@@ -110,20 +111,30 @@ export const createSupabaseProductOperations: StateCreator<
     try {
       const updateData: any = {};
       
-      if (updates.name) updateData.product_name = updates.name;
+      if (updates.product_name) updateData.product_name = updates.product_name;
       if (updates.category) updateData.category = updates.category;
       if (updates.price !== undefined) updateData.price = updates.price;
       if (updates.units) updateData.units = updates.units;
       if (updates.reorder_level !== undefined) updateData.reorder_level = updates.reorder_level;
       if (updates.expiry_date !== undefined) updateData.expiry_date = updates.expiry_date;
       
-      if (updates.supplier) {
-        updateData.supplier_company_name = updates.supplier.company_name;
-        updateData.supplier_gst_number = updates.supplier.gst_number;
-        updateData.supplier_address = updates.supplier.address;
-        updateData.supplier_city = updates.supplier.city;
-        updateData.supplier_state = updates.supplier.state;
-        updateData.supplier_pincode = updates.supplier.pincode;
+      if (updates.supplier_company_name) {
+        updateData.supplier_company_name = updates.supplier_company_name;
+      }
+      if (updates.supplier_gst_number) {
+        updateData.supplier_gst_number = updates.supplier_gst_number;
+      }
+      if (updates.supplier_address) {
+        updateData.supplier_address = updates.supplier_address;
+      }
+      if (updates.supplier_city) {
+        updateData.supplier_city = updates.supplier_city;
+      }
+      if (updates.supplier_state) {
+        updateData.supplier_state = updates.supplier_state;
+      }
+      if (updates.supplier_pincode) {
+        updateData.supplier_pincode = updates.supplier_pincode;
       }
 
       await supabaseService.products.update(productId, updateData);
