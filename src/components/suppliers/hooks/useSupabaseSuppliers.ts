@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { supplierService } from '@/services/supabaseService';
+import { suppliersService } from '@/services/supabaseService';
 import { toast } from 'sonner';
 
 export interface SupabaseSupplier {
@@ -27,7 +26,7 @@ export const useSupabaseSuppliers = () => {
   const loadSuppliers = async () => {
     try {
       setLoading(true);
-      const data = await supplierService.getAll();
+      const data = await suppliersService.getAll();
       setSuppliers(data);
     } catch (error) {
       console.error('Error loading suppliers:', error);
@@ -40,7 +39,7 @@ export const useSupabaseSuppliers = () => {
   // Add a new supplier
   const addSupplier = async (supplierData: Omit<SupabaseSupplier, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
-      const newSupplier = await supplierService.create(supplierData);
+      const newSupplier = await suppliersService.create(supplierData);
       setSuppliers(prev => [newSupplier, ...prev]);
       toast.success('Supplier created successfully');
       return newSupplier;
@@ -54,7 +53,7 @@ export const useSupabaseSuppliers = () => {
   // Update supplier
   const updateSupplier = async (supplierId: string, updates: Partial<SupabaseSupplier>) => {
     try {
-      const updatedSupplier = await supplierService.update(supplierId, updates);
+      const updatedSupplier = await suppliersService.update(supplierId, updates);
       setSuppliers(prev => prev.map(supplier => 
         supplier.id === supplierId ? updatedSupplier : supplier
       ));
@@ -70,7 +69,7 @@ export const useSupabaseSuppliers = () => {
   // Delete supplier
   const deleteSupplier = async (supplierId: string) => {
     try {
-      await supplierService.delete(supplierId);
+      await suppliersService.delete(supplierId);
       setSuppliers(prev => prev.filter(supplier => supplier.id !== supplierId));
       toast.success('Supplier deleted successfully');
     } catch (error) {

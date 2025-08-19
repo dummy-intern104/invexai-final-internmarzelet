@@ -1,223 +1,104 @@
-
-import { supabase } from "@/integrations/supabase/client";
 import { 
-  productService, 
+  productsService as productService, 
   salesService, 
-  clientService, 
-  paymentService,
+  clientsService, 
+  paymentsService as paymentService, 
   expenseService,
-  supplierService,
-  purchaseReturnService,
-  salesReturnService 
-} from "./supabaseService";
+  suppliersService as supplierService 
+} from './supabaseService';
 
-export interface ReportData {
-  sales: any[];
-  products: any[];
-  clients: any[];
-  payments: any[];
-  expenses?: any[];
-  suppliers?: any[];
-  purchaseReturns?: any[];
-  salesReturns?: any[];
-}
+export const reportService = {
+    async generateSalesReport(startDate: string, endDate: string) {
+        // Fetch sales data from Supabase
+        const salesData = await salesService.getAll();
 
-export const fetchReportData = async (): Promise<ReportData> => {
-  try {
-    const [sales, products, clients, payments, expenses, suppliers, purchaseReturns, salesReturns] = await Promise.all([
-      salesService.getAll(),
-      productService.getAll(),
-      clientService.getAll(),
-      paymentService.getAll(),
-      expenseService.getAll(),
-      supplierService.getAll(),
-      purchaseReturnService.getAll(),
-      salesReturnService.getAll()
-    ]);
+        // Filter sales data based on the provided date range
+        const filteredSales = salesData.filter(sale => {
+            const saleDate = new Date(sale.sale_date);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            return saleDate >= start && saleDate <= end;
+        });
 
-    return {
-      sales: sales || [],
-      products: products || [],
-      clients: clients || [],
-      payments: payments || [],
-      expenses: expenses || [],
-      suppliers: suppliers || [],
-      purchaseReturns: purchaseReturns || [],
-      salesReturns: salesReturns || []
-    };
-  } catch (error) {
-    console.error('Error fetching report data:', error);
-    return {
-      sales: [],
-      products: [],
-      clients: [],
-      payments: [],
-      expenses: [],
-      suppliers: [],
-      purchaseReturns: [],
-      salesReturns: []
-    };
-  }
-};
+        // Calculate total revenue
+        const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.total_amount, 0);
 
-// Helper functions for DailySales component
-export const getFilteredSales = (sales: any[], date: string) => {
-  return sales.filter(sale => 
-    new Date(sale.sale_date).toDateString() === new Date(date).toDateString()
-  );
-};
+        // Group sales by product
+        const salesByProduct = filteredSales.reduce((acc, sale) => {
+            const productName = sale.products?.product_name || 'Unknown Product';
+            if (!acc[productName]) {
+                acc[productName] = {
+                    productName,
+                    quantitySold: 0,
+                    revenue: 0,
+                };
+            }
+            acc[productName].quantitySold += sale.quantity_sold;
+            acc[productName].revenue += sale.total_amount;
+            return acc;
+        }, {});
 
-export const calculateSalesMetrics = (sales: any[]) => {
-  const totalSales = sales.reduce((sum, sale) => sum + Number(sale.total_amount || 0), 0);
-  const totalInvoices = sales.length;
-  
-  return {
-    totalSales,
-    totalInvoices
-  };
-};
+        // Convert salesByProduct to an array
+        const salesByProductArray = Object.values(salesByProduct);
 
-// Daily Sales Report
-export const getDailySalesReport = async (date: string) => {
-  const { data, error } = await supabase
-    .from('sales')
-    .select(`
-      *,
-      products(product_name),
-      clients(name)
-    `)
-    .gte('sale_date', `${date}T00:00:00`)
-    .lte('sale_date', `${date}T23:59:59`)
-    .order('sale_date', { ascending: false });
+        return {
+            totalRevenue,
+            salesByProduct: salesByProductArray,
+            startDate,
+            endDate,
+        };
+    },
 
-  if (error) throw error;
-  return data || [];
-};
+    async generateInventoryReport() {
+        // Fetch product and inventory data from Supabase
+        const products = await productService.getAll();
 
-// Monthly Sales Report
-export const getMonthlySalesReport = async (year: number, month: number) => {
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0);
+        // Calculate total number of products
+        const totalProducts = products.length;
 
-  const { data, error } = await supabase
-    .from('sales')
-    .select(`
-      *,
-      products(product_name),
-      clients(name)
-    `)
-    .gte('sale_date', startDate.toISOString())
-    .lte('sale_date', endDate.toISOString())
-    .order('sale_date', { ascending: false });
+        // Calculate total value of inventory
+        let totalInventoryValue = 0;
+        for (const product of products) {
+            totalInventoryValue += product.price;
+        }
 
-  if (error) throw error;
-  return data || [];
-};
+        return {
+            totalProducts,
+            totalInventoryValue,
+        };
+    },
 
-// Yearly Sales Report
-export const getYearlySalesReport = async (year: number) => {
-  const startDate = new Date(year, 0, 1);
-  const endDate = new Date(year, 11, 31);
+    async generateClientReport() {
+        // Fetch client data from Supabase
+        const clients = await clientsService.getAll();
 
-  const { data, error } = await supabase
-    .from('sales')
-    .select(`
-      *,
-      products(product_name),
-      clients(name)
-    `)
-    .gte('sale_date', startDate.toISOString())
-    .lte('sale_date', endDate.toISOString())
-    .order('sale_date', { ascending: false });
+        // Calculate total number of clients
+        const totalClients = clients.length;
 
-  if (error) throw error;
-  return data || [];
-};
+        return {
+            totalClients,
+        };
+    },
 
-// Stock Reports
-export const getStockReport = async () => {
-  const { data, error } = await supabase
-    .from('inventory')
-    .select(`
-      *,
-      products(product_name, category, price)
-    `)
-    .order('current_stock', { ascending: true });
+    async generatePaymentReport(startDate: string, endDate: string) {
+        // Fetch payment data from Supabase
+        const payments = await paymentService.getAll();
 
-  if (error) throw error;
-  return data || [];
-};
+        // Filter payments data based on the provided date range
+        const filteredPayments = payments.filter(payment => {
+            const paymentDate = new Date(payment.payment_date);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            return paymentDate >= start && paymentDate <= end;
+        });
 
-// Low Stock Report - Fixed RPC call
-export const getLowStockReport = async () => {
-  // Direct query without RPC since we can filter this way
-  const { data, error } = await supabase
-    .from('inventory')
-    .select(`
-      *,
-      products(product_name, category, price)
-    `)
-    .order('current_stock', { ascending: true });
-  
-  if (error) throw error;
-  
-  // Filter low stock items where current_stock <= reorder_level
-  return (data || []).filter(item => item.current_stock <= item.reorder_level);
-};
+        // Calculate total amount received
+        const totalAmountReceived = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
 
-// Profit & Loss Report
-export const getProfitLossReport = async (startDate: string, endDate: string) => {
-  const [salesData, expenseData] = await Promise.all([
-    supabase
-      .from('sales')
-      .select('total_amount, selling_price, quantity_sold')
-      .gte('sale_date', startDate)
-      .lte('sale_date', endDate),
-    supabase
-      .from('expenses')
-      .select('amount')
-      .gte('date', startDate)
-      .lte('date', endDate)
-  ]);
-
-  if (salesData.error) throw salesData.error;
-  if (expenseData.error) throw expenseData.error;
-
-  const totalRevenue = (salesData.data || []).reduce((sum, sale) => sum + Number(sale.total_amount), 0);
-  const totalExpenses = (expenseData.data || []).reduce((sum, expense) => sum + Number(expense.amount), 0);
-  const profit = totalRevenue - totalExpenses;
-
-  return {
-    totalRevenue,
-    totalExpenses,
-    profit,
-    sales: salesData.data || [],
-    expenses: expenseData.data || []
-  };
-};
-
-// GST Report
-export const getGSTReport = async (startDate: string, endDate: string) => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .select(`
-      *,
-      invoice_items(*)
-    `)
-    .gte('date', startDate)
-    .lte('date', endDate)
-    .order('date', { ascending: false });
-
-  if (error) throw error;
-
-  const gstSummary = (data || []).reduce((acc, invoice) => {
-    acc.totalGST += Number(invoice.gst_amount);
-    acc.totalSales += Number(invoice.total_amount);
-    return acc;
-  }, { totalGST: 0, totalSales: 0 });
-
-  return {
-    ...gstSummary,
-    invoices: data || []
-  };
+        return {
+            totalAmountReceived,
+            startDate,
+            endDate,
+        };
+    },
 };
