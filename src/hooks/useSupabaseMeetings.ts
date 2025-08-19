@@ -18,6 +18,18 @@ export interface SupabaseMeeting {
   updated_at: string;
 }
 
+// Helper function to ensure valid meeting type
+const ensureValidMeetingType = (type: string): 'call' | 'video' | 'in-person' => {
+  const validTypes = ['call', 'video', 'in-person'] as const;
+  return validTypes.includes(type as any) ? type as any : 'call';
+};
+
+// Helper function to ensure valid status
+const ensureValidStatus = (status: string): 'scheduled' | 'completed' | 'cancelled' => {
+  const validStatuses = ['scheduled', 'completed', 'cancelled'] as const;
+  return validStatuses.includes(status as any) ? status as any : 'scheduled';
+};
+
 export const useSupabaseMeetings = () => {
   const [meetings, setMeetings] = useState<SupabaseMeeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +38,15 @@ export const useSupabaseMeetings = () => {
     try {
       setLoading(true);
       const data = await supabaseService.meetings.getAll();
-      setMeetings(data);
+      
+      // Transform data to ensure type safety
+      const transformedMeetings = data.map((meeting: any) => ({
+        ...meeting,
+        type: ensureValidMeetingType(meeting.type),
+        status: ensureValidStatus(meeting.status)
+      }));
+      
+      setMeetings(transformedMeetings);
     } catch (error) {
       console.error('Error loading meetings:', error);
       toast.error('Failed to load meetings');
@@ -38,9 +58,14 @@ export const useSupabaseMeetings = () => {
   const addMeeting = async (meetingData: Omit<SupabaseMeeting, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     try {
       const newMeeting = await supabaseService.meetings.create(meetingData);
-      setMeetings(prev => [newMeeting, ...prev]);
+      const transformedMeeting = {
+        ...newMeeting,
+        type: ensureValidMeetingType(newMeeting.type),
+        status: ensureValidStatus(newMeeting.status)
+      };
+      setMeetings(prev => [transformedMeeting, ...prev]);
       toast.success('Meeting scheduled successfully');
-      return newMeeting;
+      return transformedMeeting;
     } catch (error) {
       console.error('Error creating meeting:', error);
       toast.error('Failed to schedule meeting');
@@ -51,11 +76,16 @@ export const useSupabaseMeetings = () => {
   const updateMeeting = async (meetingId: string, updates: Partial<SupabaseMeeting>) => {
     try {
       const updatedMeeting = await supabaseService.meetings.update(meetingId, updates);
+      const transformedMeeting = {
+        ...updatedMeeting,
+        type: ensureValidMeetingType(updatedMeeting.type),
+        status: ensureValidStatus(updatedMeeting.status)
+      };
       setMeetings(prev => prev.map(meeting => 
-        meeting.id === meetingId ? updatedMeeting : meeting
+        meeting.id === meetingId ? transformedMeeting : meeting
       ));
       toast.success('Meeting updated successfully');
-      return updatedMeeting;
+      return transformedMeeting;
     } catch (error) {
       console.error('Error updating meeting:', error);
       toast.error('Failed to update meeting');

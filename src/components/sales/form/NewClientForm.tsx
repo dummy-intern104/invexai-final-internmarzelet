@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { clientService } from "@/services/supabaseService";
+import { supabaseService } from "@/services/supabaseService";
 import { toast } from "sonner";
 
 interface NewClientData {
@@ -55,7 +55,7 @@ const NewClientForm = ({ onAddClient, disabled }: NewClientFormProps) => {
         gst_number: null,
       };
       
-      const newClient = await clientService.create(supabaseClientData);
+      const newClient = await supabaseService.clients.create(supabaseClientData);
       
       // Pass the new client data to parent component
       onAddClient(newClient);

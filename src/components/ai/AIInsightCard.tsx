@@ -1,39 +1,38 @@
 
-import { AIInsight } from "@/types";
 import { AlertCircle, CheckCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AIInsightCardProps {
-  insight: AIInsight;
+  title: string;
+  description: string;
+  type: 'info' | 'warning' | 'success';
   className?: string;
 }
 
-export const AIInsightCard = ({ insight, className }: AIInsightCardProps) => {
-  const { title, description, type } = insight;
-  
+export const AIInsightCard = ({ title, description, type, className }: AIInsightCardProps) => {
   const getIcon = () => {
     switch (type) {
       case 'info':
-        return <Info className="w-5 h-5 text-info" />;
+        return <Info className="w-5 h-5 text-blue-600" />;
       case 'warning':
-        return <AlertCircle className="w-5 h-5 text-warning" />;
+        return <AlertCircle className="w-5 h-5 text-orange-600" />;
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-success" />;
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
       default:
-        return <Info className="w-5 h-5 text-info" />;
+        return <Info className="w-5 h-5 text-blue-600" />;
     }
   };
   
   const getBgColor = () => {
     switch (type) {
       case 'info':
-        return 'bg-info/10';
+        return 'bg-blue-50';
       case 'warning':
-        return 'bg-warning/10';
+        return 'bg-orange-50';
       case 'success':
-        return 'bg-success/10';
+        return 'bg-green-50';
       default:
-        return 'bg-info/10';
+        return 'bg-blue-50';
     }
   };
   

@@ -74,9 +74,11 @@ const SalesReturns = () => {
     },
   ];
 
-  const totalReturns = salesReturns.length;
-  const totalAmount = salesReturns.reduce((sum, ret) => sum + Number(ret.return_amount || 0), 0);
-  const pendingReturns = salesReturns.filter(ret => ret.status === 'pending').length;
+  // Safely calculate totals with proper type checking
+  const returnsArray = Array.isArray(salesReturns) ? salesReturns : [];
+  const totalReturns = returnsArray.length;
+  const totalAmount = returnsArray.reduce((sum: number, ret: any) => sum + Number(ret.return_amount || 0), 0);
+  const pendingReturns = returnsArray.filter((ret: any) => ret.status === 'pending').length;
 
   if (isLoading) {
     return (
@@ -161,7 +163,7 @@ const SalesReturns = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} data={salesReturns} />
+          <DataTable columns={columns} data={returnsArray} />
         </CardContent>
       </Card>
     </div>

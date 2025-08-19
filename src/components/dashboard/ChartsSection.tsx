@@ -45,9 +45,9 @@ const ChartsSection = () => {
         <CardContent>
           <BarChart 
             data={topProductsData} 
-            xKey="name" 
-            yKey="value" 
-            color="#82ca9d"
+            dataKey="value" 
+            xAxisDataKey="name" 
+            fill="#82ca9d"
           />
         </CardContent>
       </Card>

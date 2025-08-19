@@ -2,9 +2,9 @@
 import React, { useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import DashboardStats from "@/components/dashboard/DashboardStats";
-import { ChartsSection } from "@/components/dashboard/ChartsSection";
-import { AlertsSection } from "@/components/dashboard/AlertsSection";
-import { RecentActivitySection } from "@/components/dashboard/RecentActivitySection";
+import ChartsSection from "@/components/dashboard/ChartsSection";
+import AlertsSection from "@/components/dashboard/AlertsSection";
+import RecentActivitySection from "@/components/dashboard/RecentActivitySection";
 import useAppStore from "@/store/appStore";
 
 const Dashboard = () => {
