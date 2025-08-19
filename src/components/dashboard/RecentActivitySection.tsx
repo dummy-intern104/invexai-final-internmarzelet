@@ -6,25 +6,31 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const RecentActivitySection = () => {
-  // Fetch recent sales with proper joins
+  // Fetch recent sales with proper joins - fixed the select syntax
   const { data: recentSales = [], isLoading: salesLoading } = useQuery({
     queryKey: ['recent-sales'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sales')
         .select(`
-          *,
-          clients (
+          id,
+          quantity_sold,
+          total_amount,
+          sale_date,
+          clients!sales_client_id_fkey (
             name
           ),
-          products (
+          products!sales_product_id_fkey (
             product_name
           )
         `)
         .order('sale_date', { ascending: false })
         .limit(5);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching recent sales:', error);
+        throw error;
+      }
       return data || [];
     }
   });
@@ -35,11 +41,14 @@ const RecentActivitySection = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
-        .select('*')
+        .select('id, name, email, phone, created_at')
         .order('created_at', { ascending: false })
         .limit(3);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching recent clients:', error);
+        throw error;
+      }
       return data || [];
     }
   });
@@ -50,11 +59,14 @@ const RecentActivitySection = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select('id, product_name, category, price, created_at')
         .order('created_at', { ascending: false })
         .limit(3);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching recent products:', error);
+        throw error;
+      }
       return data || [];
     }
   });
