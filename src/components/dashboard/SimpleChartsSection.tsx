@@ -24,9 +24,9 @@ export const SimpleChartsSection = () => {
     };
   });
 
-  // Generate top products data
+  // Generate top products data - fix product ID comparison
   const productSales = sales.reduce((acc, sale) => {
-    const product = products.find(p => p.id === sale.product_id);
+    const product = products.find(p => String(p.id) === String(sale.product_id) || p.product_id === sale.product_id);
     const productName = product?.product_name || 'Unknown Product';
     acc[productName] = (acc[productName] || 0) + (sale.selling_price * sale.quantity_sold);
     return acc;

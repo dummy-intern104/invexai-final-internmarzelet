@@ -45,7 +45,7 @@ export const SimpleRecentActivity = () => {
               <div className="space-y-2">
                 {recentSales.length > 0 ? (
                   recentSales.map((sale, index) => {
-                    const product = products.find(p => p.id === sale.product_id);
+                    const product = products.find(p => String(p.id) === String(sale.product_id) || p.product_id === sale.product_id);
                     const client = clients.find(c => c.id === sale.clientId);
                     return (
                       <div key={sale.sale_id || index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">

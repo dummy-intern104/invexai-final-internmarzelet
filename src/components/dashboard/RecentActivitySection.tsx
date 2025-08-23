@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const RecentActivitySection = () => {
-  // Fetch recent sales with proper joins - fixed the select syntax
+  // Fetch recent sales with proper joins
   const { data: recentSales = [], isLoading: salesLoading } = useQuery({
     queryKey: ['recent-sales'],
     queryFn: async () => {
@@ -17,10 +17,10 @@ const RecentActivitySection = () => {
           quantity_sold,
           total_amount,
           sale_date,
-          clients (
+          clients!inner (
             name
           ),
-          products (
+          products!inner (
             product_name
           )
         `)
