@@ -102,19 +102,31 @@ const RecentActivitySection = () => {
             </h4>
             <div className="space-y-2">
               {recentSales.length > 0 ? (
-                recentSales.map((sale) => (
-                  <div key={sale.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium">{sale.products?.product_name || 'Product'}</p>
-                      <p className="text-xs text-gray-500">
-                        {sale.clients?.name || 'Walk-in Customer'} • {sale.quantity_sold} units
-                      </p>
+                recentSales.map((sale) => {
+                  // Handle clients data which might be an array or object
+                  const clientName = Array.isArray(sale.clients) 
+                    ? sale.clients[0]?.name || 'Walk-in Customer'
+                    : sale.clients?.name || 'Walk-in Customer';
+                  
+                  // Handle products data which might be an array or object
+                  const productName = Array.isArray(sale.products)
+                    ? sale.products[0]?.product_name || 'Product'
+                    : sale.products?.product_name || 'Product';
+
+                  return (
+                    <div key={sale.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">{productName}</p>
+                        <p className="text-xs text-gray-500">
+                          {clientName} • {sale.quantity_sold} units
+                        </p>
+                      </div>
+                      <span className="text-sm font-medium text-green-600">
+                        ₹{Number(sale.total_amount || 0).toLocaleString()}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium text-green-600">
-                      ₹{Number(sale.total_amount || 0).toLocaleString()}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-sm text-gray-500 text-center py-4">No recent sales</p>
               )}
