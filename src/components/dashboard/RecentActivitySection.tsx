@@ -17,10 +17,10 @@ const RecentActivitySection = () => {
           quantity_sold,
           total_amount,
           sale_date,
-          clients!sales_client_id_fkey (
+          clients (
             name
           ),
-          products!sales_product_id_fkey (
+          products (
             product_name
           )
         `)
