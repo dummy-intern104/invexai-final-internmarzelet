@@ -102,16 +102,12 @@ const RecentActivitySection = () => {
             </h4>
             <div className="space-y-2">
               {recentSales.length > 0 ? (
-                recentSales.map((sale) => {
-                  // Handle clients data which might be an array or object
-                  const clientName = Array.isArray(sale.clients) 
-                    ? sale.clients[0]?.name || 'Walk-in Customer'
-                    : sale.clients?.name || 'Walk-in Customer';
+                recentSales.map((sale: any) => {
+                  // Safely handle clients data
+                  const clientName = sale.clients?.name || 'Walk-in Customer';
                   
-                  // Handle products data which might be an array or object
-                  const productName = Array.isArray(sale.products)
-                    ? sale.products[0]?.product_name || 'Product'
-                    : sale.products?.product_name || 'Product';
+                  // Safely handle products data
+                  const productName = sale.products?.product_name || 'Product';
 
                   return (
                     <div key={sale.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
