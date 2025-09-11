@@ -21,7 +21,7 @@ export const UltraSimpleDashboardStats = () => {
   
   // Calculate simple revenue - just sum all sales amounts
   const totalRevenue = sales?.reduce((sum, sale) => {
-    const amount = sale.total_amount || (sale.selling_price * sale.quantity_sold) || 0;
+    const amount = (sale.selling_price * sale.quantity_sold) || 0;
     return sum + Number(amount);
   }, 0) || 0;
 

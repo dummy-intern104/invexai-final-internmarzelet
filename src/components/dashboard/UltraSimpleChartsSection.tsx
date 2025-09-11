@@ -15,7 +15,7 @@ export const UltraSimpleChartsSection = () => {
   const totalSales = sales?.length || 0;
   const totalProducts = products?.length || 0;
   const totalRevenue = sales?.reduce((sum, sale) => {
-    const amount = sale.total_amount || (sale.selling_price * sale.quantity_sold) || 0;
+    const amount = (sale.selling_price * sale.quantity_sold) || 0;
     return sum + Number(amount);
   }, 0) || 0;
 

@@ -169,7 +169,7 @@ export const supabaseAnalyticsService = {
 
       // Group by product and sum revenue
       const productRevenue = salesData.reduce((acc, sale) => {
-        const productName = sale.products?.product_name || 'Unknown Product';
+        const productName = 'Unknown Product'; // Simplified for now
         acc[productName] = (acc[productName] || 0) + Number(sale.total_amount || 0);
         return acc;
       }, {} as Record<string, number>);

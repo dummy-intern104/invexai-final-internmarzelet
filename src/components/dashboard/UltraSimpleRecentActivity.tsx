@@ -15,12 +15,12 @@ export const UltraSimpleRecentActivity = () => {
 
   // Get recent sales (last 5) - simple approach
   const recentSales = (sales || [])
-    .sort((a, b) => new Date(b.sale_date || b.created_at).getTime() - new Date(a.sale_date || a.created_at).getTime())
+    .sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
     .slice(0, 5);
 
   // Get recent clients (last 3)
   const recentClients = (clients || [])
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime())
     .slice(0, 3);
 
   // Get recent products (last 3)
@@ -28,15 +28,15 @@ export const UltraSimpleRecentActivity = () => {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 3);
 
-  const findClientName = (clientId: string) => {
+  const findClientName = (clientId: number) => {
     if (!clientId) return 'Walk-in Customer';
     const client = clients?.find(c => c.id === clientId);
     return client?.name || 'Unknown Client';
   };
 
-  const findProductName = (productId: string) => {
+  const findProductName = (productId: number) => {
     if (!productId) return 'Unknown Product';
-    const product = products?.find(p => p.id === productId);
+    const product = products?.find(p => p.id === String(productId));
     return product?.product_name || 'Unknown Product';
   };
 
@@ -63,15 +63,15 @@ export const UltraSimpleRecentActivity = () => {
               <div className="space-y-2">
                 {recentSales.length > 0 ? (
                   recentSales.map((sale) => (
-                    <div key={sale.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                    <div key={sale.sale_id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                       <div>
                         <p className="text-sm font-medium">{findProductName(sale.product_id)}</p>
                         <p className="text-xs text-gray-500">
-                          {findClientName(sale.client_id)} • {sale.quantity_sold} units
+                          {findClientName(sale.clientId)} • {sale.quantity_sold} units
                         </p>
                       </div>
                       <span className="text-sm font-medium text-green-600">
-                        ₹{Number(sale.total_amount || (sale.selling_price * sale.quantity_sold) || 0).toLocaleString()}
+                        ₹{Number((sale.selling_price * sale.quantity_sold) || 0).toLocaleString()}
                       </span>
                     </div>
                   ))
@@ -96,7 +96,7 @@ export const UltraSimpleRecentActivity = () => {
                         <p className="text-xs text-gray-500">{client.email || client.phone || 'No contact info'}</p>
                       </div>
                       <span className="text-xs text-gray-400">
-                        {new Date(client.created_at).toLocaleDateString()}
+                        {new Date(client.joinDate).toLocaleDateString()}
                       </span>
                     </div>
                   ))

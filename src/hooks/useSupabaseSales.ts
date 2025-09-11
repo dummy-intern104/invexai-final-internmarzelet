@@ -15,12 +15,6 @@ export interface SupabaseSale {
   created_at: string;
   payment_method?: string;
   notes?: string;
-  products?: {
-    product_name: string;
-  };
-  clients?: {
-    name: string;
-  };
 }
 
 export const useSupabaseSales = () => {
@@ -30,18 +24,10 @@ export const useSupabaseSales = () => {
   const loadSales = async () => {
     try {
       setLoading(true);
+      // Load sales data without joins to avoid relationship errors
       const data = await supabaseService.sales.getAll();
       
-      // Transform the data to ensure proper structure
-      const transformedSales = data.map((sale: any) => ({
-        ...sale,
-        // Handle the case where clients might be an array from the join
-        clients: Array.isArray(sale.clients) 
-          ? sale.clients[0] || { name: 'Unknown' }
-          : sale.clients || { name: 'Unknown' }
-      }));
-      
-      setSales(transformedSales);
+      setSales(data as SupabaseSale[]);
     } catch (error) {
       console.error('Error loading sales:', error);
       toast.error('Failed to load sales');
@@ -53,15 +39,9 @@ export const useSupabaseSales = () => {
   const addSale = async (saleData: Omit<SupabaseSale, 'id' | 'user_id' | 'created_at'>) => {
     try {
       const newSale = await supabaseService.sales.create(saleData);
-      const transformedSale = {
-        ...newSale,
-        clients: Array.isArray(newSale.clients) 
-          ? newSale.clients[0] || { name: 'Unknown' }
-          : newSale.clients || { name: 'Unknown' }
-      };
-      setSales(prev => [transformedSale, ...prev]);
+      setSales(prev => [newSale as SupabaseSale, ...prev]);
       toast.success('Sale recorded successfully');
-      return transformedSale;
+      return newSale as SupabaseSale;
     } catch (error) {
       console.error('Error creating sale:', error);
       toast.error('Failed to record sale');
